@@ -27,7 +27,7 @@ const AppRoutes = () => {
       {user && <Navbar />}
       <main>
         <Routes>
-          <Route path="/" element={<Navigate to="/auction" replace />} />
+          <Route path="/" element={<Navigate to="/dashboard" replace />} />
           <Route path="/login" element={<Login />} />
           <Route path="/dashboard" element={<Dashboard />} />
           <Route path="/teams" element={<TeamManagement />} />
