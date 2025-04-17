@@ -82,10 +82,20 @@ const TeamManagement = () => {
     try {
       setSubmitting(true);
       
-      // Add team to database
+      // Make sure we have a user
+      if (!user || !user.email) {
+        throw new Error('You must be logged in to add a team');
+      }
+      
+      // Add team to database with the owner field set to the user's email
       const { data, error } = await supabase
         .from('teams')
-        .insert([{ name, purse, points: 0 }])
+        .insert([{ 
+          name, 
+          purse, 
+          points: 0,
+          owner: user.email // Set the owner field to the user's email
+        }])
         .select();
         
       if (error) {

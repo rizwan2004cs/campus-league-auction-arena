@@ -35,13 +35,23 @@ const AuctionControls = ({
   
   // Filter eligible teams - those with enough purse and under category limit
   const eligibleTeams = teams.filter(team => {
-    const categoryPlayers = team.players?.filter(p => p.category === player.category) || [];
-    const isUnderLimit = categoryPlayers.length < (playerLimits[player.category] || 2);
-    return team.purse >= player.base_price && isUnderLimit;
+    if (!team || !player) return false;
+    
+    // Make sure team has enough purse
+    if (team.purse < (player.base_price || 0)) return false;
+    
+    // Check category limit
+    if (team.players && playerLimits) {
+      const categoryPlayers = team.players.filter(p => p.category === player.category) || [];
+      const limit = playerLimits[player.category] || 2;
+      if (categoryPlayers.length >= limit) return false;
+    }
+    
+    return true;
   });
   
   const handlePlaceBid = async () => {
-    if (!selectedTeamId || bidAmount <= 0) return;
+    if (!selectedTeamId || bidAmount <= 0 || !player || !player.id) return;
     
     try {
       setLoading(true);
@@ -49,11 +59,13 @@ const AuctionControls = ({
     } finally {
       setLoading(false);
       setSelectedTeamId('');
-      setBidAmount(0);
+      setBidAmount(player.base_price || 0);
     }
   };
   
   const handleMarkUnsold = async () => {
+    if (!player || !player.id) return;
+    
     try {
       setLoading(true);
       await onMarkUnsold(player.id);
