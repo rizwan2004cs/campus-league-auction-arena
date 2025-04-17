@@ -4,10 +4,11 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/com
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
-import { useToast } from '@/components/ui/use-toast';
+import { useToast } from '@/hooks/use-toast';
 import { useRequireAuth } from '@/lib/auth';
 import supabase from '@/lib/supabase';
 import { Loader2, Save, Settings as SettingsIcon } from 'lucide-react';
+import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
 
 const Settings = () => {
   const { user, loading: authLoading } = useRequireAuth();
@@ -18,19 +19,28 @@ const Settings = () => {
   const [settingsId, setSettingsId] = useState<string | null>(null);
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
+  const [error, setError] = useState<string | null>(null);
   
   // Fetch settings
   const fetchSettings = async () => {
     try {
       setLoading(true);
+      setError(null);
       
       const { data, error } = await supabase
         .from('settings')
         .select('*')
-        .limit(1)
-        .single();
+        .limit(1);
         
       if (error) {
+        throw error;
+      }
+      
+      if (data && data.length > 0) {
+        setSettingsId(data[0].id);
+        setPlayersPerTeam(data[0].players_per_team);
+        setInitialPurse(data[0].initial_purse);
+      } else {
         // If no settings exist, create default
         const { data: newData, error: insertError } = await supabase
           .from('settings')
@@ -46,17 +56,15 @@ const Settings = () => {
           throw insertError;
         }
         
-        if (newData && newData[0]) {
+        if (newData && newData.length > 0) {
           setSettingsId(newData[0].id);
           setPlayersPerTeam(newData[0].players_per_team);
           setInitialPurse(newData[0].initial_purse);
         }
-      } else if (data) {
-        setSettingsId(data.id);
-        setPlayersPerTeam(data.players_per_team);
-        setInitialPurse(data.initial_purse);
       }
     } catch (error: any) {
+      console.error('Error fetching settings:', error);
+      setError(`Error fetching settings: ${error.message}`);
       toast({
         title: 'Error fetching settings',
         description: error.message,
@@ -79,6 +87,7 @@ const Settings = () => {
     
     try {
       setSaving(true);
+      setError(null);
       
       if (!settingsId) {
         // Create new settings
@@ -113,7 +122,12 @@ const Settings = () => {
         title: 'Settings saved',
         description: 'Auction settings have been updated',
       });
+      
+      // Refresh settings to get the latest data
+      fetchSettings();
     } catch (error: any) {
+      console.error('Error saving settings:', error);
+      setError(`Error saving settings: ${error.message}`);
       toast({
         title: 'Error saving settings',
         description: error.message,
@@ -139,6 +153,13 @@ const Settings = () => {
         <h1 className="text-3xl font-bold">Auction Settings</h1>
         <p className="text-muted-foreground">Configure auction parameters</p>
       </div>
+      
+      {error && (
+        <Alert variant="destructive" className="mb-6">
+          <AlertTitle>Error</AlertTitle>
+          <AlertDescription>{error}</AlertDescription>
+        </Alert>
+      )}
       
       <Card>
         <CardHeader>

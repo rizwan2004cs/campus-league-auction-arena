@@ -38,7 +38,7 @@ const TeamForm = ({ onTeamAdded, initialPurse, userEmail }: TeamFormProps) => {
           name, 
           purse, 
           points: 0,
-          owner: userEmail
+          owner: userEmail // This is the critical field that was missing
         }])
         .select();
         

@@ -5,8 +5,8 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { useToast } from '@/hooks/use-toast';
-import supabase from '@/lib/supabase';
-import { Loader2, RefreshCw } from 'lucide-react';
+import { RefreshCw, Loader2 } from 'lucide-react';
+import { updateAllTeamPurses } from '@/services/teamService';
 
 interface PurseUpdaterProps {
   initialValue: number;
@@ -22,29 +22,21 @@ const PurseUpdater = ({ initialValue, onUpdate }: PurseUpdaterProps) => {
     try {
       setUpdatingPurse(true);
       
-      // Update all teams
-      const { error } = await supabase
-        .from('teams')
-        .update({ purse: globalPurse })
-        .neq('id', '');
-        
+      const { success, error } = await updateAllTeamPurses(globalPurse);
+      
       if (error) {
         throw error;
       }
       
-      // Update settings
-      await supabase
-        .from('settings')
-        .update({ initial_purse: globalPurse })
-        .eq('id', '');
-      
-      toast({
-        title: 'Purses updated',
-        description: `All teams now have ${globalPurse} Cr purse`,
-      });
-      
-      // Refresh teams
-      onUpdate();
+      if (success) {
+        toast({
+          title: 'Purses updated',
+          description: `All teams now have ${globalPurse} Cr purse`,
+        });
+        
+        // Refresh teams
+        onUpdate();
+      }
     } catch (error: any) {
       toast({
         title: 'Error updating purses',
