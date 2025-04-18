@@ -54,6 +54,69 @@ export type Database = {
         }
         Relationships: []
       }
+      settings: {
+        Row: {
+          created_at: string | null
+          id: string
+          initial_purse: number
+          players_per_team: number
+          updated_at: string | null
+        }
+        Insert: {
+          created_at?: string | null
+          id?: string
+          initial_purse?: number
+          players_per_team?: number
+          updated_at?: string | null
+        }
+        Update: {
+          created_at?: string | null
+          id?: string
+          initial_purse?: number
+          players_per_team?: number
+          updated_at?: string | null
+        }
+        Relationships: []
+      }
+      team_players: {
+        Row: {
+          bid_price: number
+          created_at: string | null
+          id: string
+          player_id: string
+          team_id: string
+        }
+        Insert: {
+          bid_price: number
+          created_at?: string | null
+          id?: string
+          player_id: string
+          team_id: string
+        }
+        Update: {
+          bid_price?: number
+          created_at?: string | null
+          id?: string
+          player_id?: string
+          team_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "team_players_player_id_fkey"
+            columns: ["player_id"]
+            isOneToOne: true
+            referencedRelation: "players"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "team_players_team_id_fkey"
+            columns: ["team_id"]
+            isOneToOne: false
+            referencedRelation: "teams"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       teams: {
         Row: {
           created_at: string
