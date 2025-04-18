@@ -1,4 +1,3 @@
-
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { Team } from './TeamCard';
 import { ChevronsUp, Trophy } from 'lucide-react';
@@ -14,6 +13,11 @@ interface PlayerData {
   priority: number;
 }
 
+interface TeamPlayerRow {
+  player_id: string;
+  players: PlayerData;
+}
+
 interface RankedTeam extends Team {
   playerNames: string[];
   prioritySum: number;
@@ -25,7 +29,6 @@ const Leaderboard = ({ teams }: LeaderboardProps) => {
   useEffect(() => {
     const fetchTeamPlayers = async () => {
       const rankedTeamsWithDetails = await Promise.all(teams.map(async (team) => {
-        // Fetch players for each team
         const { data: teamPlayers, error } = await supabase
           .from('team_players')
           .select(`
@@ -43,11 +46,10 @@ const Leaderboard = ({ teams }: LeaderboardProps) => {
           };
         }
 
-        // Fix: Extract player names and priorities correctly
         const playerNames: string[] = [];
         let prioritySum = 0;
         
-        teamPlayers.forEach(tp => {
+        (teamPlayers as TeamPlayerRow[]).forEach(tp => {
           if (tp.players) {
             playerNames.push(tp.players.name || '');
             prioritySum += tp.players.priority || 0;
@@ -61,19 +63,15 @@ const Leaderboard = ({ teams }: LeaderboardProps) => {
         };
       }));
 
-      // Custom ranking logic
       const sortedTeams = rankedTeamsWithDetails.sort((a, b) => {
-        // First, compare by points
         if (b.points !== a.points) {
           return b.points - a.points;
         }
         
-        // If points are equal, compare by priority sum (lower is better)
         if (a.prioritySum !== b.prioritySum) {
           return a.prioritySum - b.prioritySum;
         }
         
-        // If priority sums are equal, compare by remaining purse (higher is better)
         return b.purse - a.purse;
       });
 

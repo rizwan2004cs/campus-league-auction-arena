@@ -1,4 +1,3 @@
-
 import { useState } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
@@ -47,6 +46,7 @@ const TeamForm = ({ onTeamAdded, initialPurse, userEmail }: TeamFormProps) => {
       }
       
       // Add team to database with the owner field set to the user's email
+      // Always set points to 0 for new teams
       const { data, error } = await supabase
         .from('teams')
         .insert([{ 

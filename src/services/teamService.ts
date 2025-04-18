@@ -52,13 +52,27 @@ export const fetchTeams = async (): Promise<{
   }
 };
 
-// Fix the team purse update function to use WHERE clause
+// Update the team purse update function to reset players and points
 export const updateAllTeamPurses = async (amount: number): Promise<{ success: boolean; error: Error | null }> => {
   try {
-    // Update all teams with a proper WHERE clause
+    // First, remove all team_players associations
+    const { error: deletePlayersError } = await supabase
+      .from('team_players')
+      .delete()
+      .gte('id', '00000000-0000-0000-0000-000000000000'); // This will delete all team players
+      
+    if (deletePlayersError) {
+      console.error('Error removing team players:', deletePlayersError);
+      // Continue anyway - we'll still update the purses
+    }
+    
+    // Update all teams with reset points and the new purse
     const { error: teamsError } = await supabase
       .from('teams')
-      .update({ purse: amount })
+      .update({ 
+        purse: amount,
+        points: 0 // Reset points when updating purse
+      })
       .gte('id', '00000000-0000-0000-0000-000000000000'); // This will update all teams
       
     if (teamsError) {
