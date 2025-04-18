@@ -31,14 +31,29 @@ const TeamForm = ({ onTeamAdded, initialPurse, userEmail }: TeamFormProps) => {
         throw new Error('You must be logged in to add a team');
       }
       
+      // Check if team name already exists
+      const { data: existingTeam, error: checkError } = await supabase
+        .from('teams')
+        .select('id')
+        .ilike('name', name.trim())
+        .maybeSingle();
+        
+      if (checkError) {
+        throw checkError;
+      }
+      
+      if (existingTeam) {
+        throw new Error(`A team with the name "${name}" already exists`);
+      }
+      
       // Add team to database with the owner field set to the user's email
       const { data, error } = await supabase
         .from('teams')
         .insert([{ 
-          name, 
+          name: name.trim(), 
           purse, 
           points: 0,
-          owner: userEmail // This is the critical field that was missing
+          owner: userEmail
         }])
         .select();
         

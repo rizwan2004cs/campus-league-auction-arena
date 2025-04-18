@@ -76,10 +76,10 @@ const Settings = () => {
   };
   
   useEffect(() => {
-    if (user) {
+    if (!authLoading) {
       fetchSettings();
     }
-  }, [user]);
+  }, [authLoading]);
   
   // Save settings
   const handleSaveSettings = async (e: React.FormEvent) => {
@@ -118,10 +118,26 @@ const Settings = () => {
         }
       }
       
-      toast({
-        title: 'Settings saved',
-        description: 'Auction settings have been updated',
-      });
+      // Also update all teams to have the new initial purse
+      const { error: updateTeamsError } = await supabase
+        .from('teams')
+        .update({ purse: initialPurse })
+        .gte('id', '00000000-0000-0000-0000-000000000000');
+        
+      if (updateTeamsError) {
+        console.error('Error updating team purses:', updateTeamsError);
+        // Don't throw here, just show a warning
+        toast({
+          title: 'Warning',
+          description: 'Settings saved, but team purses could not be updated.',
+          variant: 'default',
+        });
+      } else {
+        toast({
+          title: 'Settings saved',
+          description: 'Auction settings have been updated and all team purses have been reset.',
+        });
+      }
       
       // Refresh settings to get the latest data
       fetchSettings();

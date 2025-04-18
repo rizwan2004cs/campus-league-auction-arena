@@ -4,7 +4,6 @@ import { Team } from './TeamCard';
 import { ChevronsUp, Trophy } from 'lucide-react';
 import { useState, useEffect } from 'react';
 import supabase from '@/lib/supabase';
-import { Player } from './PlayerCard';
 
 interface LeaderboardProps {
   teams: Team[];
@@ -25,7 +24,8 @@ const Leaderboard = ({ teams }: LeaderboardProps) => {
         const { data: teamPlayers, error } = await supabase
           .from('team_players')
           .select(`
-            players:player_id (name, priority)
+            player_id,
+            players (name, priority)
           `)
           .eq('team_id', team.id);
 
@@ -55,12 +55,12 @@ const Leaderboard = ({ teams }: LeaderboardProps) => {
           return b.points - a.points;
         }
         
-        // If points are equal, compare by priority sum
+        // If points are equal, compare by priority sum (lower is better)
         if (b.prioritySum !== a.prioritySum) {
           return a.prioritySum - b.prioritySum;
         }
         
-        // If priority sums are equal, compare by remaining purse
+        // If priority sums are equal, compare by remaining purse (higher is better)
         return b.purse - a.purse;
       });
 

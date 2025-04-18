@@ -52,32 +52,44 @@ export const fetchTeams = async (): Promise<{
   }
 };
 
-// Fix the team purse update function
+// Fix the team purse update function to use WHERE clause
 export const updateAllTeamPurses = async (amount: number): Promise<{ success: boolean; error: Error | null }> => {
   try {
-    // Update all teams
+    // Update all teams with a proper WHERE clause
     const { error: teamsError } = await supabase
       .from('teams')
-      .update({ purse: amount });
+      .update({ purse: amount })
+      .gte('id', '00000000-0000-0000-0000-000000000000'); // This will update all teams
       
     if (teamsError) {
       throw teamsError;
     }
     
     // Update settings
-    const { error: settingsError } = await supabase
+    const { data: settingsData, error: settingsError } = await supabase
       .from('settings')
-      .update({ initial_purse: amount })
-      .eq('id', ''); // This will update all records since we're not specifying a specific ID
+      .select('id')
+      .limit(1)
+      .single();
     
     if (settingsError) {
-      // Try to create settings if update fails
+      // Create settings if it doesn't exist
       const { error: insertError } = await supabase
         .from('settings')
         .insert([{ initial_purse: amount, players_per_team: 2 }]);
         
       if (insertError) {
         throw insertError;
+      }
+    } else {
+      // Update existing settings
+      const { error: updateError } = await supabase
+        .from('settings')
+        .update({ initial_purse: amount })
+        .eq('id', settingsData.id);
+        
+      if (updateError) {
+        throw updateError;
       }
     }
     
