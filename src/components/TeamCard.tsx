@@ -1,8 +1,15 @@
 
-import { Shield, Users } from 'lucide-react';
+import { Shield, Users, Pencil, Trash2 } from 'lucide-react';
 import { Card, CardContent, CardFooter, CardHeader } from '@/components/ui/card';
 import { Progress } from '@/components/ui/progress';
 import { Player } from './PlayerCard';
+import { Button } from '@/components/ui/button';
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog';
+import { Input } from '@/components/ui/input';
+import { Label } from '@/components/ui/label';
+import { useState } from 'react';
+import { useToast } from '@/hooks/use-toast';
+import { deleteTeam, updateTeam } from '@/services/teamService';
 
 export type Team = {
   id: string;
@@ -16,23 +23,104 @@ interface TeamCardProps {
   team: Team;
   initialPurse?: number;
   showPlayers?: boolean;
+  onTeamUpdated?: () => void;
 }
 
 const TeamCard = ({ 
   team, 
   initialPurse = 50,
-  showPlayers = false
+  showPlayers = false,
+  onTeamUpdated 
 }: TeamCardProps) => {
   const { name, purse, points, players = [] } = team;
+  const [isEditing, setIsEditing] = useState(false);
+  const [editedName, setEditedName] = useState(name);
+  const { toast } = useToast();
   
   const pursePercentage = (purse / initialPurse) * 100;
+  
+  const handleDelete = async () => {
+    if (window.confirm('Are you sure you want to delete this team?')) {
+      const { success, error } = await deleteTeam(team.id);
+      
+      if (success) {
+        toast({
+          title: 'Team deleted',
+          description: `${name} has been deleted successfully`,
+        });
+        onTeamUpdated?.();
+      } else {
+        toast({
+          title: 'Error deleting team',
+          description: error?.message,
+          variant: 'destructive',
+        });
+      }
+    }
+  };
+  
+  const handleEdit = async () => {
+    const { success, error } = await updateTeam(team.id, { name: editedName });
+    
+    if (success) {
+      toast({
+        title: 'Team updated',
+        description: `Team has been updated successfully`,
+      });
+      setIsEditing(false);
+      onTeamUpdated?.();
+    } else {
+      toast({
+        title: 'Error updating team',
+        description: error?.message,
+        variant: 'destructive',
+      });
+    }
+  };
   
   return (
     <Card className="w-full overflow-hidden transition-all duration-300 hover:shadow-lg">
       <CardHeader className="gradient-header text-white p-4">
-        <div className="flex items-center space-x-3">
-          <Shield className="h-6 w-6" />
-          <h3 className="text-xl font-bold truncate">{name}</h3>
+        <div className="flex items-center justify-between">
+          <div className="flex items-center space-x-3">
+            <Shield className="h-6 w-6" />
+            <h3 className="text-xl font-bold truncate">{name}</h3>
+          </div>
+          <div className="flex space-x-2">
+            <Dialog open={isEditing} onOpenChange={setIsEditing}>
+              <DialogTrigger asChild>
+                <Button variant="ghost" size="icon" className="h-8 w-8">
+                  <Pencil className="h-4 w-4" />
+                </Button>
+              </DialogTrigger>
+              <DialogContent>
+                <DialogHeader>
+                  <DialogTitle>Edit Team</DialogTitle>
+                </DialogHeader>
+                <div className="space-y-4">
+                  <div className="space-y-2">
+                    <Label htmlFor="team-name">Team Name</Label>
+                    <Input
+                      id="team-name"
+                      value={editedName}
+                      onChange={(e) => setEditedName(e.target.value)}
+                    />
+                  </div>
+                  <Button onClick={handleEdit} className="w-full">
+                    Save Changes
+                  </Button>
+                </div>
+              </DialogContent>
+            </Dialog>
+            <Button 
+              variant="ghost" 
+              size="icon" 
+              className="h-8 w-8"
+              onClick={handleDelete}
+            >
+              <Trash2 className="h-4 w-4" />
+            </Button>
+          </div>
         </div>
       </CardHeader>
       

@@ -113,3 +113,55 @@ export const updateAllTeamPurses = async (amount: number): Promise<{ success: bo
     return { success: false, error };
   }
 };
+
+// New function to delete a team
+export const deleteTeam = async (teamId: string): Promise<{ success: boolean; error: Error | null }> => {
+  try {
+    // First delete all team_players associations
+    const { error: deletePlayersError } = await supabase
+      .from('team_players')
+      .delete()
+      .eq('team_id', teamId);
+      
+    if (deletePlayersError) {
+      throw deletePlayersError;
+    }
+    
+    // Then delete the team
+    const { error: deleteTeamError } = await supabase
+      .from('teams')
+      .delete()
+      .eq('id', teamId);
+      
+    if (deleteTeamError) {
+      throw deleteTeamError;
+    }
+    
+    return { success: true, error: null };
+  } catch (error: any) {
+    console.error('Error deleting team:', error);
+    return { success: false, error };
+  }
+};
+
+// New function to update a team
+export const updateTeam = async (
+  teamId: string, 
+  updates: { name?: string; purse?: number }
+): Promise<{ success: boolean; error: Error | null }> => {
+  try {
+    const { error } = await supabase
+      .from('teams')
+      .update(updates)
+      .eq('id', teamId);
+      
+    if (error) {
+      throw error;
+    }
+    
+    return { success: true, error: null };
+  } catch (error: any) {
+    console.error('Error updating team:', error);
+    return { success: false, error };
+  }
+};

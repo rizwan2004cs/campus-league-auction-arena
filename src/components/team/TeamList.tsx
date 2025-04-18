@@ -6,9 +6,10 @@ interface TeamListProps {
   teams: Team[];
   loading: boolean;
   initialPurse: number;
+  onTeamUpdated: () => void;
 }
 
-const TeamList = ({ teams, loading, initialPurse }: TeamListProps) => {
+const TeamList = ({ teams, loading, initialPurse, onTeamUpdated }: TeamListProps) => {
   return (
     <div>
       <div className="flex justify-between items-center mb-4">
@@ -39,6 +40,7 @@ const TeamList = ({ teams, loading, initialPurse }: TeamListProps) => {
               key={team.id} 
               team={team} 
               initialPurse={initialPurse}
+              onTeamUpdated={onTeamUpdated}
             />
           ))}
         </div>
