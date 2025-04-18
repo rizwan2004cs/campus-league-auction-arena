@@ -1,3 +1,4 @@
+
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { Team } from './TeamCard';
 import { ChevronsUp, Trophy } from 'lucide-react';
@@ -13,9 +14,13 @@ interface PlayerData {
   priority: number;
 }
 
-interface TeamPlayerRow {
+// This defines the structure of the data as it actually comes from Supabase
+interface TeamPlayerResponse {
   player_id: string;
-  players: PlayerData;
+  players: {
+    name: string;
+    priority: number;
+  };
 }
 
 interface RankedTeam extends Team {
@@ -49,7 +54,8 @@ const Leaderboard = ({ teams }: LeaderboardProps) => {
         const playerNames: string[] = [];
         let prioritySum = 0;
         
-        (teamPlayers as TeamPlayerRow[]).forEach(tp => {
+        // Properly type the response from Supabase
+        (teamPlayers as unknown as TeamPlayerResponse[]).forEach(tp => {
           if (tp.players) {
             playerNames.push(tp.players.name || '');
             prioritySum += tp.players.priority || 0;
