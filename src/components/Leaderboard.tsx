@@ -9,6 +9,11 @@ interface LeaderboardProps {
   teams: Team[];
 }
 
+interface PlayerData {
+  name: string;
+  priority: number;
+}
+
 interface RankedTeam extends Team {
   playerNames: string[];
   prioritySum: number;
@@ -38,8 +43,16 @@ const Leaderboard = ({ teams }: LeaderboardProps) => {
           };
         }
 
-        const playerNames = teamPlayers.map(tp => tp.players?.name || '').filter(Boolean);
-        const prioritySum = teamPlayers.reduce((sum, tp) => sum + (tp.players?.priority || 0), 0);
+        // Fix: Extract player names and priorities correctly
+        const playerNames: string[] = [];
+        let prioritySum = 0;
+        
+        teamPlayers.forEach(tp => {
+          if (tp.players) {
+            playerNames.push(tp.players.name || '');
+            prioritySum += tp.players.priority || 0;
+          }
+        });
 
         return {
           ...team,
@@ -56,7 +69,7 @@ const Leaderboard = ({ teams }: LeaderboardProps) => {
         }
         
         // If points are equal, compare by priority sum (lower is better)
-        if (b.prioritySum !== a.prioritySum) {
+        if (a.prioritySum !== b.prioritySum) {
           return a.prioritySum - b.prioritySum;
         }
         
