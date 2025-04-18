@@ -1,6 +1,7 @@
 
 import supabase from '@/lib/supabase';
 import { Team } from '@/components/TeamCard';
+import { Player } from '@/components/PlayerCard';
 
 export const fetchTeams = async (): Promise<{ 
   teams: Team[]; 
@@ -66,6 +67,21 @@ export const updateAllTeamPurses = async (amount: number): Promise<{ success: bo
       // Continue anyway - we'll still update the purses
     }
     
+    // Reset player sold status when resetting teams
+    const { error: resetPlayersError } = await supabase
+      .from('players')
+      .update({ 
+        sold: false,
+        sold_to: null,
+        bid_price: null
+      })
+      .eq('sold', true);
+      
+    if (resetPlayersError) {
+      console.error('Error resetting players:', resetPlayersError);
+      // Continue anyway - we'll still update the purses
+    }
+    
     // Update all teams with reset points and the new purse
     const { error: teamsError } = await supabase
       .from('teams')
@@ -127,6 +143,20 @@ export const deleteTeam = async (teamId: string): Promise<{ success: boolean; er
       throw deletePlayersError;
     }
     
+    // Reset player sold status for players associated with this team
+    const { error: resetPlayersError } = await supabase
+      .from('players')
+      .update({ 
+        sold: false,
+        sold_to: null,
+        bid_price: null
+      })
+      .eq('sold_to', teamId);
+      
+    if (resetPlayersError) {
+      throw resetPlayersError;
+    }
+    
     // Then delete the team
     const { error: deleteTeamError } = await supabase
       .from('teams')
@@ -163,5 +193,162 @@ export const updateTeam = async (
   } catch (error: any) {
     console.error('Error updating team:', error);
     return { success: false, error };
+  }
+};
+
+// Function to modify player bid or mark as unsold
+export const modifyPlayerBid = async (
+  playerId: string,
+  updates: { 
+    sold?: boolean; 
+    sold_to?: string | null; 
+    bid_price?: number | null;
+  }
+): Promise<{ success: boolean; error: Error | null }> => {
+  try {
+    // First get the current player data
+    const { data: playerData, error: fetchError } = await supabase
+      .from('players')
+      .select('*')
+      .eq('id', playerId)
+      .single();
+      
+    if (fetchError) {
+      throw fetchError;
+    }
+    
+    // If player was previously sold to a team, remove the association
+    if (playerData.sold && playerData.sold_to) {
+      const { error: deleteAssocError } = await supabase
+        .from('team_players')
+        .delete()
+        .eq('player_id', playerId);
+        
+      if (deleteAssocError) {
+        throw deleteAssocError;
+      }
+      
+      // If player was previously sold, restore the purse to the original team
+      if (playerData.bid_price && playerData.sold_to) {
+        const { error: updatePurseError } = await supabase
+          .from('teams')
+          .select('purse')
+          .eq('id', playerData.sold_to)
+          .single()
+          .then(({ data, error }) => {
+            if (error) throw error;
+            return supabase
+              .from('teams')
+              .update({ purse: data.purse + playerData.bid_price })
+              .eq('id', playerData.sold_to);
+          });
+          
+        if (updatePurseError) {
+          throw updatePurseError;
+        }
+      }
+    }
+    
+    // If the player is being sold to a new team
+    if (updates.sold && updates.sold_to && updates.bid_price) {
+      // Add team_player association
+      const { error: addAssocError } = await supabase
+        .from('team_players')
+        .insert([{
+          team_id: updates.sold_to,
+          player_id: playerId,
+          bid_price: updates.bid_price
+        }]);
+        
+      if (addAssocError) {
+        throw addAssocError;
+      }
+      
+      // Update the new team's purse
+      const { error: updatePurseError } = await supabase
+        .from('teams')
+        .select('purse')
+        .eq('id', updates.sold_to)
+        .single()
+        .then(({ data, error }) => {
+          if (error) throw error;
+          return supabase
+            .from('teams')
+            .update({ purse: data.purse - updates.bid_price })
+            .eq('id', updates.sold_to);
+        });
+        
+      if (updatePurseError) {
+        throw updatePurseError;
+      }
+    }
+    
+    // Update the player record
+    const { error: updatePlayerError } = await supabase
+      .from('players')
+      .update(updates)
+      .eq('id', playerId);
+      
+    if (updatePlayerError) {
+      throw updatePlayerError;
+    }
+    
+    return { success: true, error: null };
+  } catch (error: any) {
+    console.error('Error modifying player bid:', error);
+    return { success: false, error };
+  }
+};
+
+// Get team with players
+export const fetchTeamWithPlayers = async (teamId: string): Promise<{
+  team: Team | null;
+  players: Player[];
+  error: Error | null;
+}> => {
+  try {
+    // Fetch team
+    const { data: teamData, error: teamError } = await supabase
+      .from('teams')
+      .select('*')
+      .eq('id', teamId)
+      .single();
+      
+    if (teamError) {
+      throw teamError;
+    }
+    
+    // Fetch players associated with the team
+    const { data: teamPlayersData, error: playersError } = await supabase
+      .from('team_players')
+      .select(`
+        player_id,
+        bid_price,
+        players:player_id (*)
+      `)
+      .eq('team_id', teamId);
+      
+    if (playersError) {
+      throw playersError;
+    }
+    
+    // Extract player data from the join
+    const players = teamPlayersData.map(tp => ({
+      ...tp.players,
+      bid_price: tp.bid_price
+    }));
+    
+    return {
+      team: teamData,
+      players,
+      error: null
+    };
+  } catch (error: any) {
+    console.error('Error fetching team with players:', error);
+    return {
+      team: null,
+      players: [],
+      error
+    };
   }
 };

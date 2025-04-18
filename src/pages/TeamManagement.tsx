@@ -82,6 +82,7 @@ const TeamManagement = () => {
             teams={teams} 
             loading={loading} 
             initialPurse={initialPurse} 
+            onTeamUpdated={loadTeams}
           />
         </div>
       </div>
