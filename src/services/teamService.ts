@@ -1,4 +1,3 @@
-
 import supabase from '@/lib/supabase';
 import { Team } from '@/components/TeamCard';
 import { Player } from '@/components/PlayerCard';
@@ -53,7 +52,6 @@ export const fetchTeams = async (): Promise<{
   }
 };
 
-// Update the team purse update function to reset players and points
 export const updateAllTeamPurses = async (amount: number): Promise<{ success: boolean; error: Error | null }> => {
   try {
     // First, remove all team_players associations
@@ -130,7 +128,6 @@ export const updateAllTeamPurses = async (amount: number): Promise<{ success: bo
   }
 };
 
-// New function to delete a team
 export const deleteTeam = async (teamId: string): Promise<{ success: boolean; error: Error | null }> => {
   try {
     // First delete all team_players associations
@@ -174,7 +171,6 @@ export const deleteTeam = async (teamId: string): Promise<{ success: boolean; er
   }
 };
 
-// New function to update a team
 export const updateTeam = async (
   teamId: string, 
   updates: { name?: string; purse?: number }
@@ -196,7 +192,6 @@ export const updateTeam = async (
   }
 };
 
-// Function to modify player bid or mark as unsold
 export const modifyPlayerBid = async (
   playerId: string,
   updates: { 
@@ -327,7 +322,6 @@ export const modifyPlayerBid = async (
   }
 };
 
-// Get team with players
 export const fetchTeamWithPlayers = async (teamId: string): Promise<{
   team: Team | null;
   players: Player[];
@@ -360,19 +354,23 @@ export const fetchTeamWithPlayers = async (teamId: string): Promise<{
     }
     
     // Transform the data to match the Player type
-    const players = teamPlayersData.map(tp => ({
-      ...tp.players,
-      bid_price: tp.bid_price,
-      id: tp.players.id,
-      name: tp.players.name,
-      category: tp.players.category,
-      points: tp.players.points,
-      priority: tp.players.priority,
-      base_price: tp.players.base_price,
-      sold: tp.players.sold,
-      sold_to: tp.players.sold_to,
-      image_url: tp.players.image_url
-    })) as Player[];
+    const players = teamPlayersData.map(tp => {
+      // Ensure tp.players is an object and not an array
+      const playerData = tp.players as Record<string, any>;
+      return {
+        ...playerData,
+        bid_price: tp.bid_price,
+        id: playerData.id,
+        name: playerData.name,
+        category: playerData.category,
+        points: playerData.points,
+        priority: playerData.priority,
+        base_price: playerData.base_price,
+        sold: playerData.sold,
+        sold_to: playerData.sold_to,
+        image_url: playerData.image_url
+      } as Player;
+    });
     
     return {
       team: teamData,
@@ -389,7 +387,6 @@ export const fetchTeamWithPlayers = async (teamId: string): Promise<{
   }
 };
 
-// New function to fetch all public auction data
 export const fetchPublicAuctionData = async (): Promise<{
   players: Player[];
   teams: Team[];
@@ -438,13 +435,14 @@ export const fetchPublicAuctionData = async (): Promise<{
         const players = (teamPlayers || []).map(tp => {
           // Ensure tp.players is an object and not an array
           if (tp.players && typeof tp.players === 'object' && !Array.isArray(tp.players)) {
+            const playerData = tp.players as Record<string, any>;
             return {
-              ...tp.players,
+              ...playerData,
               bid_price: tp.bid_price
             };
           }
           return null;
-        }).filter(Boolean);
+        }).filter(Boolean) as Player[];
         
         return { ...team, players };
       })
