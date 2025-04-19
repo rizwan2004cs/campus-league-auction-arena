@@ -1,4 +1,3 @@
-
 import { useEffect, useState } from 'react';
 import { useRequireAuth } from '@/lib/auth';
 import { useToast } from '@/components/ui/use-toast';
@@ -377,6 +376,17 @@ const AuctionRoom = () => {
     }
   };
   
+  // Group players by category
+  const categorizedPlayers = players.reduce((acc, player) => {
+    if (!player.sold) {
+      if (!acc[player.category]) {
+        acc[player.category] = [];
+      }
+      acc[player.category].push(player);
+    }
+    return acc;
+  }, {} as { [key: string]: Player[] });
+  
   if (authLoading || loading) {
     return (
       <div className="flex justify-center items-center min-h-screen">
@@ -481,36 +491,45 @@ const AuctionRoom = () => {
                   <p>No more players in queue</p>
                 </div>
               ) : (
-                <div className="divide-y">
-                  {players.slice(1, 6).map((player) => (
-                    <div 
-                      key={player.id} 
-                      className="py-3 flex justify-between items-center cursor-pointer hover:bg-gray-50 transition-colors px-2 rounded"
-                      onClick={() => handleSelectPlayer(player)}
-                    >
-                      <div className="flex items-center space-x-3">
-                        <Badge className={`
-                          ${player.category === 'Bowler' ? 'bg-green-100 text-green-800' : ''}
-                          ${player.category === 'Batter' ? 'bg-blue-100 text-blue-800' : ''}
-                          ${player.category === 'All-Rounder' ? 'bg-purple-100 text-purple-800' : ''}
-                        `}>
-                          {player.category}
-                        </Badge>
-                        <span className="font-medium">{player.name}</span>
-                      </div>
-                      <div className="flex items-center space-x-2">
-                        <span className="text-sm font-medium">{player.base_price} Cr</span>
-                        <Button 
-                          variant="ghost" 
-                          size="icon" 
-                          className="h-6 w-6"
-                          onClick={(e) => {
-                            e.stopPropagation();
-                            handleSelectPlayer(player);
-                          }}
-                        >
-                          <ArrowRight className="h-4 w-4 text-muted-foreground" />
-                        </Button>
+                <div className="space-y-4">
+                  {Object.entries(categorizedPlayers).map(([category, categoryPlayers]) => (
+                    <div key={category} className="space-y-2">
+                      <h3 className="font-semibold text-sm text-muted-foreground">
+                        {category}s ({categoryPlayers.length})
+                      </h3>
+                      <div className="divide-y">
+                        {categoryPlayers.map((player) => (
+                          <div 
+                            key={player.id} 
+                            className="py-3 flex justify-between items-center cursor-pointer hover:bg-gray-50 transition-colors px-2 rounded"
+                            onClick={() => handleSelectPlayer(player)}
+                          >
+                            <div className="flex items-center space-x-3">
+                              <Badge className={`
+                                ${player.category === 'Bowler' ? 'bg-green-100 text-green-800' : ''}
+                                ${player.category === 'Batter' ? 'bg-blue-100 text-blue-800' : ''}
+                                ${player.category === 'All-Rounder' ? 'bg-purple-100 text-purple-800' : ''}
+                              `}>
+                                {player.category}
+                              </Badge>
+                              <span className="font-medium">{player.name}</span>
+                            </div>
+                            <div className="flex items-center space-x-2">
+                              <span className="text-sm font-medium">{player.base_price} Cr</span>
+                              <Button 
+                                variant="ghost" 
+                                size="icon" 
+                                className="h-6 w-6"
+                                onClick={(e) => {
+                                  e.stopPropagation();
+                                  handleSelectPlayer(player);
+                                }}
+                              >
+                                <ArrowRight className="h-4 w-4 text-muted-foreground" />
+                              </Button>
+                            </div>
+                          </div>
+                        ))}
                       </div>
                     </div>
                   ))}

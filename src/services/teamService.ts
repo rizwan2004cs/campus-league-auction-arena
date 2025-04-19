@@ -1,4 +1,3 @@
-
 import supabase from '@/lib/supabase';
 import { Team } from '@/components/TeamCard';
 import { Player } from '@/components/PlayerCard';
@@ -359,11 +358,20 @@ export const fetchTeamWithPlayers = async (teamId: string): Promise<{
       throw playersError;
     }
     
-    // Properly transform the data to match the Player type
-    const players: Player[] = teamPlayersData.map(tp => ({
+    // Transform the data to match the Player type
+    const players = teamPlayersData.map(tp => ({
       ...tp.players,
-      bid_price: tp.bid_price
-    }));
+      bid_price: tp.bid_price,
+      id: tp.players.id,
+      name: tp.players.name,
+      category: tp.players.category,
+      points: tp.players.points,
+      priority: tp.players.priority,
+      base_price: tp.players.base_price,
+      sold: tp.players.sold,
+      sold_to: tp.players.sold_to,
+      image_url: tp.players.image_url
+    })) as Player[];
     
     return {
       team: teamData,

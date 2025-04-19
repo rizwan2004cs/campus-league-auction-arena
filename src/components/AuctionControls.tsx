@@ -1,4 +1,3 @@
-
 import { useState, useEffect } from 'react';
 import { Button } from '@/components/ui/button';
 import { Label } from '@/components/ui/label';
@@ -41,13 +40,11 @@ const AuctionControls = ({
   const selectedTeam = teams.find(t => t.id === selectedTeamId);
   
   useEffect(() => {
-    // Update bid amount when player changes
     setBidAmount(player.base_price || 0);
     setSelectedTeamId('');
     setError(null);
   }, [player]);
   
-  // Check if bid amount is valid for selected team
   useEffect(() => {
     setError(null);
     
@@ -56,14 +53,11 @@ const AuctionControls = ({
     }
   }, [selectedTeam, bidAmount]);
   
-  // Filter eligible teams - those with enough purse and under category limit
   const eligibleTeams = teams.filter(team => {
     if (!team || !player) return false;
     
-    // Make sure team has enough purse for at least the base price
     if (team.purse < (player.base_price || 0)) return false;
     
-    // Check category limit
     if (team.players && playerLimits) {
       const categoryPlayers = team.players.filter(p => p.category === player.category) || [];
       const limit = playerLimits[player.category] || 2;
@@ -76,7 +70,6 @@ const AuctionControls = ({
   const handlePlaceBid = async () => {
     if (!selectedTeamId || bidAmount <= 0 || !player || !player.id) return;
     
-    // Validate bid amount against team purse
     const selectedTeam = teams.find(t => t.id === selectedTeamId);
     if (!selectedTeam || bidAmount > selectedTeam.purse) {
       toast({
@@ -115,7 +108,6 @@ const AuctionControls = ({
       setLoading(true);
       
       if (selectedTeamId && bidAmount > 0) {
-        // Validate bid amount against team purse for modifications too
         const selectedTeam = teams.find(t => t.id === selectedTeamId);
         if (!selectedTeam || bidAmount > selectedTeam.purse) {
           toast({
@@ -127,7 +119,6 @@ const AuctionControls = ({
           return;
         }
         
-        // Change team or bid amount
         const { success, error } = await modifyPlayerBid(player.id, {
           sold: true,
           sold_to: selectedTeamId,
@@ -139,7 +130,6 @@ const AuctionControls = ({
             title: 'Bid modified',
             description: `Player has been assigned to a new team with bid amount ${bidAmount} Cr`,
           });
-          // Refresh data through onPlaceBid callback
           await onPlaceBid(player.id, selectedTeamId, bidAmount);
         } else {
           toast({
@@ -149,8 +139,11 @@ const AuctionControls = ({
           });
         }
       } else {
-        // Just reset the player's sold status
         await onMarkUnsold(player.id);
+        toast({
+          title: 'Player released',
+          description: 'Player is now available for rebidding',
+        });
       }
     } finally {
       setLoading(false);
@@ -233,7 +226,7 @@ const AuctionControls = ({
               disabled={loading || (selectedTeamId === '' && player.sold) || !!error}
             >
               <RotateCcw className="mr-2 h-4 w-4" />
-              {selectedTeamId ? 'Change Team/Bid' : 'Reset Player'}
+              {selectedTeamId ? 'Change Team/Bid' : 'Release Player'}
             </Button>
           )}
           
