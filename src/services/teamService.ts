@@ -387,3 +387,94 @@ export const fetchTeamWithPlayers = async (teamId: string): Promise<{
     };
   }
 };
+
+// New function to fetch all public auction data
+export const fetchPublicAuctionData = async (): Promise<{
+  players: Player[];
+  teams: Team[];
+  categoryCounts: Record<string, number>;
+  error: Error | null;
+}> => {
+  try {
+    // Fetch all players
+    const { data: playersData, error: playersError } = await supabase
+      .from('players')
+      .select('*')
+      .order('priority', { ascending: true });
+    
+    if (playersError) {
+      throw playersError;
+    }
+    
+    // Fetch all teams
+    const { data: teamsData, error: teamsError } = await supabase
+      .from('teams')
+      .select('*')
+      .order('points', { ascending: false });
+    
+    if (teamsError) {
+      throw teamsError;
+    }
+    
+    // Get team players for each team
+    const teamsWithPlayers = await Promise.all(
+      (teamsData || []).map(async (team) => {
+        const { data: teamPlayers, error: teamPlayersError } = await supabase
+          .from('team_players')
+          .select(`
+            player_id,
+            bid_price,
+            players:player_id (*)
+          `)
+          .eq('team_id', team.id);
+          
+        if (teamPlayersError) {
+          console.error('Error fetching team players:', teamPlayersError);
+          return { ...team, players: [] };
+        }
+        
+        // Transform data for players
+        const players = (teamPlayers || []).map(tp => ({
+          ...tp.players,
+          bid_price: tp.bid_price
+        }));
+        
+        return { ...team, players };
+      })
+    );
+    
+    // Calculate category counts
+    const categoryCounts: Record<string, number> = {
+      'Bowler': 0,
+      'Batter': 0,
+      'All-Rounder': 0
+    };
+    
+    const unsoldPlayers = (playersData || []).filter(player => !player.sold);
+    
+    unsoldPlayers.forEach((player) => {
+      if (player.category && categoryCounts[player.category] !== undefined) {
+        categoryCounts[player.category]++;
+      }
+    });
+    
+    return {
+      players: playersData || [],
+      teams: teamsWithPlayers,
+      categoryCounts,
+      error: null
+    };
+  } catch (error: any) {
+    console.error('Error fetching public auction data:', error);
+    return {
+      players: [],
+      teams: [],
+      categoryCounts: {
+        'Bowler': 0,
+        'Batter': 0,
+        'All-Rounder': 0
+      },
+      error
+    };
+  }
+};

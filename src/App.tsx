@@ -11,6 +11,8 @@ import TeamManagement from "@/pages/TeamManagement";
 import AuctionRoom from "@/pages/AuctionRoom";
 import Settings from "@/pages/Settings";
 import NotFound from "@/pages/NotFound";
+import PublicAuctionView from "@/pages/PublicAuctionView";
+import LeaderboardPage from "@/pages/LeaderboardPage";
 import { useAuth } from "@/lib/auth";
 
 const queryClient = new QueryClient();
@@ -33,6 +35,11 @@ const AppRoutes = () => {
           <Route path="/teams" element={<TeamManagement />} />
           <Route path="/auction" element={<AuctionRoom />} />
           <Route path="/settings" element={<Settings />} />
+          
+          {/* Public routes that don't require authentication */}
+          <Route path="/public" element={<PublicAuctionView />} />
+          <Route path="/leaderboard" element={<LeaderboardPage />} />
+          
           <Route path="*" element={<NotFound />} />
         </Routes>
       </main>

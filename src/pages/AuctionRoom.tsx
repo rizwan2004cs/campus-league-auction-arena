@@ -1,3 +1,4 @@
+
 import { useEffect, useState } from 'react';
 import { useRequireAuth } from '@/lib/auth';
 import { useToast } from '@/components/ui/use-toast';
@@ -23,7 +24,6 @@ import {
   Loader2, 
   Timer, 
   Users, 
-  XCircle
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 
@@ -378,7 +378,7 @@ const AuctionRoom = () => {
   
   // Group players by category
   const categorizedPlayers = players.reduce((acc, player) => {
-    if (!player.sold) {
+    if (!player.sold && player.id !== currentPlayer?.id) {
       if (!acc[player.category]) {
         acc[player.category] = [];
       }
@@ -486,7 +486,7 @@ const AuctionRoom = () => {
               </CardTitle>
             </CardHeader>
             <CardContent>
-              {players.length <= 1 ? (
+              {Object.keys(categorizedPlayers).length === 0 ? (
                 <div className="text-center p-4 text-muted-foreground">
                   <p>No more players in queue</p>
                 </div>
