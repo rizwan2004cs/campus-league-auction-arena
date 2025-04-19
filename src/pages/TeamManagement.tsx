@@ -82,7 +82,7 @@ const TeamManagement = () => {
             teams={teams} 
             loading={loading} 
             initialPurse={initialPurse} 
-            onTeamUpdated={loadTeams}
+            onTeamUpdated={loadTeams}  // Pass the loadTeams function to TeamList
           />
         </div>
       </div>

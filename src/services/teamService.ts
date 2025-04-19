@@ -219,6 +219,7 @@ export const modifyPlayerBid = async (
     
     // If player was previously sold to a team, remove the association
     if (playerData.sold && playerData.sold_to) {
+      // Delete the team_player association
       const { error: deleteAssocError } = await supabase
         .from('team_players')
         .delete()
@@ -232,14 +233,19 @@ export const modifyPlayerBid = async (
       if (playerData.bid_price && playerData.sold_to) {
         const { error: updatePurseError } = await supabase
           .from('teams')
-          .select('purse')
+          .select('purse, points')
           .eq('id', playerData.sold_to)
           .single()
           .then(({ data, error }) => {
             if (error) throw error;
+            
+            // Also subtract player points from team
             return supabase
               .from('teams')
-              .update({ purse: data.purse + playerData.bid_price })
+              .update({ 
+                purse: data.purse + playerData.bid_price,
+                points: data.points - playerData.points 
+              })
               .eq('id', playerData.sold_to);
           });
           
@@ -251,6 +257,24 @@ export const modifyPlayerBid = async (
     
     // If the player is being sold to a new team
     if (updates.sold && updates.sold_to && updates.bid_price) {
+      // Check if team has enough purse for this bid
+      const { data: teamData, error: teamError } = await supabase
+        .from('teams')
+        .select('purse')
+        .eq('id', updates.sold_to)
+        .single();
+        
+      if (teamError) {
+        throw teamError;
+      }
+      
+      if (teamData.purse < updates.bid_price) {
+        return { 
+          success: false, 
+          error: new Error(`Team doesn't have enough purse (${teamData.purse} Cr) for this bid (${updates.bid_price} Cr)`) 
+        };
+      }
+      
       // Add team_player association
       const { error: addAssocError } = await supabase
         .from('team_players')
@@ -264,17 +288,20 @@ export const modifyPlayerBid = async (
         throw addAssocError;
       }
       
-      // Update the new team's purse
+      // Update the new team's purse and points
       const { error: updatePurseError } = await supabase
         .from('teams')
-        .select('purse')
+        .select('purse, points')
         .eq('id', updates.sold_to)
         .single()
         .then(({ data, error }) => {
           if (error) throw error;
           return supabase
             .from('teams')
-            .update({ purse: data.purse - updates.bid_price })
+            .update({ 
+              purse: data.purse - updates.bid_price,
+              points: data.points + playerData.points 
+            })
             .eq('id', updates.sold_to);
         });
         
@@ -332,8 +359,8 @@ export const fetchTeamWithPlayers = async (teamId: string): Promise<{
       throw playersError;
     }
     
-    // Extract player data from the join
-    const players = teamPlayersData.map(tp => ({
+    // Properly transform the data to match the Player type
+    const players: Player[] = teamPlayersData.map(tp => ({
       ...tp.players,
       bid_price: tp.bid_price
     }));

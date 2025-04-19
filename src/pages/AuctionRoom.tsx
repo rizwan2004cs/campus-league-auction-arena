@@ -26,6 +26,7 @@ import {
   Users, 
   XCircle
 } from 'lucide-react';
+import { Button } from '@/components/ui/button';
 
 const AuctionRoom = () => {
   const { user, loading: authLoading } = useRequireAuth();
@@ -235,6 +236,11 @@ const AuctionRoom = () => {
     }
   }, [user]);
   
+  // Handle selecting a player from the list
+  const handleSelectPlayer = (player: Player) => {
+    setCurrentPlayer(player);
+  };
+  
   // Place bid
   const handlePlaceBid = async (playerId: string, teamId: string, bidAmount: number) => {
     try {
@@ -243,6 +249,11 @@ const AuctionRoom = () => {
       
       if (!player || !team) {
         throw new Error('Player or team not found');
+      }
+      
+      // Validate bid amount against team purse
+      if (bidAmount > team.purse) {
+        throw new Error(`Bid amount (${bidAmount} Cr) exceeds team's purse (${team.purse} Cr)`);
       }
       
       // Update player
@@ -472,7 +483,11 @@ const AuctionRoom = () => {
               ) : (
                 <div className="divide-y">
                   {players.slice(1, 6).map((player) => (
-                    <div key={player.id} className="py-3 flex justify-between items-center">
+                    <div 
+                      key={player.id} 
+                      className="py-3 flex justify-between items-center cursor-pointer hover:bg-gray-50 transition-colors px-2 rounded"
+                      onClick={() => handleSelectPlayer(player)}
+                    >
                       <div className="flex items-center space-x-3">
                         <Badge className={`
                           ${player.category === 'Bowler' ? 'bg-green-100 text-green-800' : ''}
@@ -485,7 +500,17 @@ const AuctionRoom = () => {
                       </div>
                       <div className="flex items-center space-x-2">
                         <span className="text-sm font-medium">{player.base_price} Cr</span>
-                        <ArrowRight className="h-4 w-4 text-muted-foreground" />
+                        <Button 
+                          variant="ghost" 
+                          size="icon" 
+                          className="h-6 w-6"
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            handleSelectPlayer(player);
+                          }}
+                        >
+                          <ArrowRight className="h-4 w-4 text-muted-foreground" />
+                        </Button>
                       </div>
                     </div>
                   ))}
