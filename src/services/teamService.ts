@@ -1,3 +1,4 @@
+
 import supabase from '@/lib/supabase';
 import { Team } from '@/components/TeamCard';
 import { Player } from '@/components/PlayerCard';
@@ -434,10 +435,16 @@ export const fetchPublicAuctionData = async (): Promise<{
         }
         
         // Transform data for players
-        const players = (teamPlayers || []).map(tp => ({
-          ...tp.players,
-          bid_price: tp.bid_price
-        }));
+        const players = (teamPlayers || []).map(tp => {
+          // Ensure tp.players is an object and not an array
+          if (tp.players && typeof tp.players === 'object' && !Array.isArray(tp.players)) {
+            return {
+              ...tp.players,
+              bid_price: tp.bid_price
+            };
+          }
+          return null;
+        }).filter(Boolean);
         
         return { ...team, players };
       })
