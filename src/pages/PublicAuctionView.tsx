@@ -21,12 +21,19 @@ import {
   Users
 } from 'lucide-react';
 
+// Define the correct type for category counts
+interface CategoryCounts {
+  'Bowler': number;
+  'Batter': number;
+  'All-Rounder': number;
+}
+
 const PublicAuctionView = () => {
   const { toast } = useToast();
   
   const [players, setPlayers] = useState<Player[]>([]);
   const [teams, setTeams] = useState<Team[]>([]);
-  const [categoryCounts, setCategoryCounts] = useState({
+  const [categoryCounts, setCategoryCounts] = useState<CategoryCounts>({
     'Bowler': 0,
     'Batter': 0,
     'All-Rounder': 0
@@ -45,7 +52,12 @@ const PublicAuctionView = () => {
         
         setPlayers(players);
         setTeams(teams);
-        setCategoryCounts(categoryCounts);
+        // Ensure all required keys exist in the returned categoryCounts
+        setCategoryCounts({
+          'Bowler': categoryCounts['Bowler'] || 0,
+          'Batter': categoryCounts['Batter'] || 0,
+          'All-Rounder': categoryCounts['All-Rounder'] || 0
+        });
       } catch (error: any) {
         toast({
           title: 'Error loading auction data',
