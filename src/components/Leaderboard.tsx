@@ -1,8 +1,8 @@
-
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { Team } from './TeamCard';
 import { ChevronsUp, Trophy } from 'lucide-react';
 import { useState, useEffect } from 'react';
+import { motion, AnimatePresence } from 'framer-motion';
 import supabase from '@/lib/supabase';
 
 interface LeaderboardProps {
@@ -30,6 +30,7 @@ interface RankedTeam extends Team {
 
 const Leaderboard = ({ teams }: LeaderboardProps) => {
   const [rankedTeams, setRankedTeams] = useState<RankedTeam[]>([]);
+  const [prevRanks, setPrevRanks] = useState<Record<string, number>>({});
 
   useEffect(() => {
     const fetchTeamPlayers = async () => {
@@ -69,6 +70,12 @@ const Leaderboard = ({ teams }: LeaderboardProps) => {
         };
       }));
 
+      // Save previous ranks before sorting
+      const currentRanks = rankedTeamsWithDetails.reduce((acc, team, index) => {
+        acc[team.id] = index;
+        return acc;
+      }, {} as Record<string, number>);
+
       const sortedTeams = rankedTeamsWithDetails.sort((a, b) => {
         if (b.points !== a.points) {
           return b.points - a.points;
@@ -81,6 +88,7 @@ const Leaderboard = ({ teams }: LeaderboardProps) => {
         return b.purse - a.purse;
       });
 
+      setPrevRanks(currentRanks);
       setRankedTeams(sortedTeams);
     };
 
@@ -112,32 +120,62 @@ const Leaderboard = ({ teams }: LeaderboardProps) => {
               </TableRow>
             </TableHeader>
             <TableBody>
-              {rankedTeams.map((team, index) => (
-                <TableRow key={team.id} className={index === 0 ? "font-medium" : ""}>
-                  <TableCell className="text-center">
-                    {index === 0 ? (
-                      <span className="inline-flex items-center justify-center h-6 w-6 rounded-full bg-yellow-100 text-yellow-700">
-                        1
-                      </span>
-                    ) : (
-                      index + 1
-                    )}
-                  </TableCell>
-                  <TableCell className="font-medium">{team.name}</TableCell>
-                  <TableCell className="text-right">
-                    {team.points}
-                    {index === 0 && <ChevronsUp className="inline-block h-4 w-4 text-green-600 ml-1" />}
-                  </TableCell>
-                  <TableCell className="text-right">{team.purse} Cr</TableCell>
-                  <TableCell>
-                    <div className="text-sm text-muted-foreground">
-                      {team.playerNames.length > 0 
-                        ? team.playerNames.join(', ') 
-                        : 'No players'}
-                    </div>
-                  </TableCell>
-                </TableRow>
-              ))}
+              <AnimatePresence>
+                {rankedTeams.map((team, index) => {
+                  const hasMovedUp = prevRanks[team.id] > index;
+                  const hasMovedDown = prevRanks[team.id] < index;
+                  
+                  return (
+                    <motion.tr
+                      key={team.id}
+                      layout
+                      initial={{ opacity: 0, y: 20 }}
+                      animate={{ 
+                        opacity: 1, 
+                        y: 0,
+                        scale: hasMovedUp ? [1, 1.02, 1] : 1,
+                        background: hasMovedUp ? ['#fff', '#f0fdf4', '#fff'] : '#fff'
+                      }}
+                      exit={{ opacity: 0, y: 20 }}
+                      transition={{ duration: 0.3 }}
+                      className={index === 0 ? "font-medium" : ""}
+                    >
+                      <TableCell className="text-center">
+                        {index === 0 ? (
+                          <span className="inline-flex items-center justify-center h-6 w-6 rounded-full bg-yellow-100 text-yellow-700">
+                            1
+                          </span>
+                        ) : (
+                          index + 1
+                        )}
+                      </TableCell>
+                      <TableCell className="font-medium">{team.name}</TableCell>
+                      <TableCell className="text-right">
+                        <div className="flex items-center justify-end">
+                          {team.points}
+                          {hasMovedUp && (
+                            <motion.div
+                              initial={{ opacity: 0, y: 2 }}
+                              animate={{ opacity: 1, y: 0 }}
+                              transition={{ duration: 0.2 }}
+                            >
+                              <ChevronsUp className="inline-block h-4 w-4 text-green-600 ml-1" />
+                            </motion.div>
+                          )}
+                        </div>
+                      </TableCell>
+                      <TableCell className="text-right">{team.purse} Cr</TableCell>
+                      <TableCell>
+                        <div className="text-sm text-muted-foreground">
+                          {team.playerNames.length > 0 
+                            ? team.playerNames.join(', ') 
+                            : 'No players'}
+                        </div>
+                      </TableCell>
+                    </motion.tr>
+                  );
+                })}
+              </AnimatePresence>
             </TableBody>
           </Table>
         </div>

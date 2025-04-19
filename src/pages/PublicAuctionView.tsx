@@ -1,4 +1,3 @@
-
 import { useEffect, useState } from 'react';
 import { useToast } from '@/components/ui/use-toast';
 import { Skeleton } from '@/components/ui/skeleton';
@@ -6,6 +5,7 @@ import PlayerCard, { Player } from '@/components/PlayerCard';
 import TeamCard, { Team } from '@/components/TeamCard';
 import Leaderboard from '@/components/Leaderboard';
 import { fetchPublicAuctionData } from '@/services/teamService';
+import { motion, AnimatePresence } from 'framer-motion';
 import { 
   Card, 
   CardContent,
@@ -21,7 +21,6 @@ import {
   Users
 } from 'lucide-react';
 
-// Define the correct type for category counts
 interface CategoryCounts {
   'Bowler': number;
   'Batter': number;
@@ -39,20 +38,25 @@ const PublicAuctionView = () => {
     'All-Rounder': 0
   });
   const [loading, setLoading] = useState(true);
+  const [prevTeamRanks, setPrevTeamRanks] = useState<Record<string, number>>({});
   
   useEffect(() => {
     const fetchData = async () => {
       try {
-        setLoading(true);
         const { players, teams, categoryCounts, error } = await fetchPublicAuctionData();
         
         if (error) {
           throw error;
         }
         
+        const currentRanks = teams.reduce((acc, team, index) => {
+          acc[team.id] = index;
+          return acc;
+        }, {} as Record<string, number>);
+        
+        setPrevTeamRanks(currentRanks);
         setPlayers(players);
         setTeams(teams);
-        // Ensure all required keys exist in the returned categoryCounts
         setCategoryCounts({
           'Bowler': categoryCounts['Bowler'] || 0,
           'Batter': categoryCounts['Batter'] || 0,
@@ -71,13 +75,11 @@ const PublicAuctionView = () => {
     
     fetchData();
     
-    // Refresh data every 10 seconds
-    const interval = setInterval(fetchData, 10000);
+    const interval = setInterval(fetchData, 30000);
     
     return () => clearInterval(interval);
   }, [toast]);
   
-  // Group players by category and sold status
   const categorizedPlayers = players.reduce((acc, player) => {
     if (!acc[player.category]) {
       acc[player.category] = { sold: [], unsold: [] };
@@ -118,7 +120,6 @@ const PublicAuctionView = () => {
         <p className="text-muted-foreground">View live auction data</p>
       </div>
       
-      {/* Category counts */}
       <div className="grid grid-cols-3 gap-4 mb-8">
         <div className="card-with-shadow flex items-center space-x-4">
           <Badge variant="outline" className="bg-green-100 text-green-800 px-3 py-1 text-lg">
@@ -152,9 +153,7 @@ const PublicAuctionView = () => {
       </div>
       
       <div className="grid lg:grid-cols-3 gap-8">
-        {/* Main content (2/3) */}
         <div className="lg:col-span-2 space-y-6">
-          {/* Players tabs by category */}
           <Card>
             <CardHeader className="pb-2">
               <CardTitle className="flex items-center">
@@ -172,37 +171,57 @@ const PublicAuctionView = () => {
                 
                 {['Bowler', 'Batter', 'All-Rounder'].map((category) => (
                   <TabsContent key={category} value={category} className="space-y-4">
-                    {/* Unsold players in this category */}
                     {categorizedPlayers[category]?.unsold.length > 0 && (
                       <div>
                         <h3 className="font-semibold text-lg mb-2">Available Players</h3>
-                        <div className="grid sm:grid-cols-2 gap-4">
-                          {categorizedPlayers[category]?.unsold.map((player) => (
-                            <PlayerCard 
-                              key={player.id} 
-                              player={player} 
-                              showActions={false} 
-                              isAuctionCard={false}
-                            />
-                          ))}
-                        </div>
+                        <AnimatePresence>
+                          <div className="grid sm:grid-cols-2 gap-4">
+                            {categorizedPlayers[category]?.unsold.map((player) => (
+                              <motion.div
+                                key={player.id}
+                                layout
+                                initial={{ opacity: 0, scale: 0.8 }}
+                                animate={{ opacity: 1, scale: 1 }}
+                                exit={{ opacity: 0, scale: 0.8 }}
+                                transition={{ duration: 0.2 }}
+                              >
+                                <PlayerCard 
+                                  key={player.id} 
+                                  player={player} 
+                                  showActions={false} 
+                                  isAuctionCard={false}
+                                />
+                              </motion.div>
+                            ))}
+                          </div>
+                        </AnimatePresence>
                       </div>
                     )}
                     
-                    {/* Sold players in this category */}
                     {categorizedPlayers[category]?.sold.length > 0 && (
                       <div>
                         <h3 className="font-semibold text-lg mb-2">Sold Players</h3>
-                        <div className="grid sm:grid-cols-2 gap-4">
-                          {categorizedPlayers[category]?.sold.map((player) => (
-                            <PlayerCard 
-                              key={player.id} 
-                              player={player} 
-                              showActions={false} 
-                              isAuctionCard={false}
-                            />
-                          ))}
-                        </div>
+                        <AnimatePresence>
+                          <div className="grid sm:grid-cols-2 gap-4">
+                            {categorizedPlayers[category]?.sold.map((player) => (
+                              <motion.div
+                                key={player.id}
+                                layout
+                                initial={{ opacity: 0, scale: 0.8 }}
+                                animate={{ opacity: 1, scale: 1 }}
+                                exit={{ opacity: 0, scale: 0.8 }}
+                                transition={{ duration: 0.2 }}
+                              >
+                                <PlayerCard 
+                                  key={player.id} 
+                                  player={player} 
+                                  showActions={false} 
+                                  isAuctionCard={false}
+                                />
+                              </motion.div>
+                            ))}
+                          </div>
+                        </AnimatePresence>
                       </div>
                     )}
                     
@@ -218,7 +237,6 @@ const PublicAuctionView = () => {
           </Card>
         </div>
         
-        {/* Sidebar (1/3) */}
         <div className="space-y-6">
           <Leaderboard teams={teams} />
           
