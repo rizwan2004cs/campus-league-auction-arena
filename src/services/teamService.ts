@@ -499,7 +499,7 @@ export const markPlayerUnsold = async (
       throw fetchError;
     }
     
-    // Find the maximum priority within this category
+    // First, query the maximum priority value in the players table for the same category
     const { data: maxPriorityData, error: maxPriorityError } = await supabase
       .from('players')
       .select('priority')
@@ -510,21 +510,19 @@ export const markPlayerUnsold = async (
       
     if (maxPriorityError) {
       console.error('Error fetching max priority:', maxPriorityError);
-      // If we can't get the max priority, use a safe increment
-      const newPriority = Math.max(1000, playerData.priority + 100);
-      
-      // Update player priority
+      // If we can't get the max priority, use a large increment
+      // Use a number that is likely to be larger than any existing priority
       const { error: updateError } = await supabase
         .from('players')
-        .update({ priority: newPriority })
+        .update({ priority: 10000 })
         .eq('id', playerId);
         
       if (updateError) {
         throw updateError;
       }
     } else {
-      // Add 1 to the max priority to ensure it's greater
-      const newPriority = (maxPriorityData?.priority || 0) + 1;
+      // Add a safe increment to the max priority to ensure it's greater
+      const newPriority = (maxPriorityData?.priority || 0) + 10;
       
       // Update player priority
       const { error: updateError } = await supabase
