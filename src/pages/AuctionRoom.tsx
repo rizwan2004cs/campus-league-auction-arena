@@ -336,20 +336,41 @@ const AuctionRoom = () => {
       }
       
       // Find max priority for this category
-      const maxPriority = Math.max(
-        ...players
-          .filter(p => p.category === player.category)
-          .map(p => p.priority)
-      );
-      
-      // Update player priority to move to end of category
-      const { error } = await supabase
+      const { data: maxPriorityData, error: maxPriorityError } = await supabase
         .from('players')
-        .update({ priority: maxPriority + 1 })
-        .eq('id', playerId);
+        .select('priority')
+        .eq('category', player.category)
+        .order('priority', { ascending: false })
+        .limit(1)
+        .single();
         
-      if (error) {
-        throw error;
+      if (maxPriorityError) {
+        console.error('Error fetching max priority:', maxPriorityError);
+        // If we can't get the max priority, use a safe default increment
+        const defaultMaxPriority = Math.max(1000, player.priority + 100);
+        
+        // Update player priority to move to end of category
+        const { error } = await supabase
+          .from('players')
+          .update({ priority: defaultMaxPriority })
+          .eq('id', playerId);
+          
+        if (error) {
+          throw error;
+        }
+      } else {
+        // Make sure we have a valid max priority and add 1
+        const newPriority = (maxPriorityData?.priority || 0) + 1;
+        
+        // Update player priority to move to end of category
+        const { error } = await supabase
+          .from('players')
+          .update({ priority: newPriority })
+          .eq('id', playerId);
+          
+        if (error) {
+          throw error;
+        }
       }
       
       toast({

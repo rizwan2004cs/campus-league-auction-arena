@@ -483,3 +483,63 @@ export const fetchPublicAuctionData = async (): Promise<{
     };
   }
 };
+
+export const markPlayerUnsold = async (
+  playerId: string
+): Promise<{ success: boolean; error: Error | null }> => {
+  try {
+    // First get the current player data
+    const { data: playerData, error: fetchError } = await supabase
+      .from('players')
+      .select('*')
+      .eq('id', playerId)
+      .single();
+      
+    if (fetchError) {
+      throw fetchError;
+    }
+    
+    // Find the maximum priority within this category
+    const { data: maxPriorityData, error: maxPriorityError } = await supabase
+      .from('players')
+      .select('priority')
+      .eq('category', playerData.category)
+      .order('priority', { ascending: false })
+      .limit(1)
+      .single();
+      
+    if (maxPriorityError) {
+      console.error('Error fetching max priority:', maxPriorityError);
+      // If we can't get the max priority, use a safe increment
+      const newPriority = Math.max(1000, playerData.priority + 100);
+      
+      // Update player priority
+      const { error: updateError } = await supabase
+        .from('players')
+        .update({ priority: newPriority })
+        .eq('id', playerId);
+        
+      if (updateError) {
+        throw updateError;
+      }
+    } else {
+      // Add 1 to the max priority to ensure it's greater
+      const newPriority = (maxPriorityData?.priority || 0) + 1;
+      
+      // Update player priority
+      const { error: updateError } = await supabase
+        .from('players')
+        .update({ priority: newPriority })
+        .eq('id', playerId);
+        
+      if (updateError) {
+        throw updateError;
+      }
+    }
+    
+    return { success: true, error: null };
+  } catch (error: any) {
+    console.error('Error marking player as unsold:', error);
+    return { success: false, error };
+  }
+};

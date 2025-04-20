@@ -95,7 +95,15 @@ const AuctionControls = ({
     
     try {
       setLoading(true);
+      setError(null);
       await onMarkUnsold(player.id);
+    } catch (error: any) {
+      setError(error.message || 'Error marking player as unsold');
+      toast({
+        title: 'Error marking player as unsold',
+        description: error.message || 'An unexpected error occurred',
+        variant: 'destructive',
+      });
     } finally {
       setLoading(false);
     }
