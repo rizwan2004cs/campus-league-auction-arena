@@ -223,10 +223,6 @@ const AuctionRoom = () => {
     }
   }, [user]);
   
-  const handleSelectPlayer = (player: Player) => {
-    setCurrentPlayer(player);
-  };
-
   const handlePlaceBid = async (playerId: string, teamId: string, bidAmount: number) => {
     try {
       const player = players.find(p => p.id === playerId);
@@ -285,28 +281,43 @@ const AuctionRoom = () => {
         description: `${player.name} sold to ${team.name} for ${bidAmount} Cr`,
       });
       
-      const nextPlayer = players.find(p => 
-        p.id !== playerId && 
+      const sameCategory = players.filter(p => 
         !p.sold && 
+        p.id !== playerId && 
         p.category === player.category
       );
 
-      const fallbackPlayer = players.find(p => p.id !== playerId && !p.sold);
-      
-      if (nextPlayer) {
+      if (sameCategory.length > 0) {
+        const nextPlayer = sameCategory.reduce((min, p) => 
+          p.priority < min.priority ? p : min, sameCategory[0]
+        );
         setCurrentPlayer(nextPlayer);
-      } else if (fallbackPlayer) {
-        setCurrentPlayer(fallbackPlayer);
-        toast({
-          title: 'Category completed',
-          description: `All ${player.category}s have been sold. Moving to next available category.`,
-        });
       } else {
-        setCurrentPlayer(null);
-        toast({
-          title: 'Auction complete',
-          description: 'All players have been sold',
-        });
+        const categories = ['Bowler', 'Batter', 'All-Rounder'];
+        const availablePlayers = players.filter(p => !p.sold);
+        
+        for (const category of categories) {
+          const playersInCategory = availablePlayers.filter(p => p.category === category);
+          if (playersInCategory.length > 0) {
+            const nextPlayer = playersInCategory.reduce((min, p) => 
+              p.priority < min.priority ? p : min, playersInCategory[0]
+            );
+            setCurrentPlayer(nextPlayer);
+            toast({
+              title: 'Category completed',
+              description: `All ${player.category}s have been sold. Moving to ${category} category.`,
+            });
+            break;
+          }
+        }
+        
+        if (!availablePlayers.length) {
+          setCurrentPlayer(null);
+          toast({
+            title: 'Auction complete',
+            description: 'All players have been sold',
+          });
+        }
       }
       
       fetchAllData();
@@ -319,64 +330,18 @@ const AuctionRoom = () => {
     }
   };
 
-  const handleMarkUnsold = async (playerId: string) => {
-    try {
-      const player = players.find(p => p.id === playerId);
-      
-      if (!player) {
-        throw new Error('Player not found');
-      }
-      
-      const { data: maxPriorityData, error: maxPriorityError } = await supabase
-        .from('players')
-        .select('priority')
-        .eq('category', player.category)
-        .order('priority', { ascending: false })
-        .limit(1)
-        .single();
-        
-      if (maxPriorityError) {
-        console.error('Error fetching max priority:', maxPriorityError);
-        const defaultMaxPriority = Math.max(1000, player.priority + 100);
-        
-        const { error } = await supabase
-          .from('players')
-          .update({ priority: defaultMaxPriority })
-          .eq('id', playerId);
-          
-        if (error) {
-          throw error;
-        }
-      } else {
-        const newPriority = (maxPriorityData?.priority || 0) + 1;
-        
-        const { error } = await supabase
-          .from('players')
-          .update({ priority: newPriority })
-          .eq('id', playerId);
-          
-        if (error) {
-          throw error;
-        }
-      }
-      
+  const handleSelectPlayer = (player: Player) => {
+    const sameCategory = players.filter(p => 
+      !p.sold && 
+      p.category === player.category
+    );
+
+    if (sameCategory.length > 0) {
+      setCurrentPlayer(player);
+    } else {
       toast({
-        title: 'Player marked unsold',
-        description: `${player.name} moved to end of queue`,
-      });
-      
-      const remainingPlayers = players.filter(p => p.id !== playerId);
-      if (remainingPlayers.length > 0) {
-        setCurrentPlayer(remainingPlayers[0]);
-      } else {
-        setCurrentPlayer(null);
-      }
-      
-      fetchAllData();
-    } catch (error: any) {
-      toast({
-        title: 'Error marking player unsold',
-        description: error.message,
+        title: 'Category unavailable',
+        description: `No ${player.category}s available for auction.`,
         variant: 'destructive',
       });
     }
