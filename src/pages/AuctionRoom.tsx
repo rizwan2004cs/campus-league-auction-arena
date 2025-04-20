@@ -1,4 +1,3 @@
-
 import { useEffect, useState } from 'react';
 import { useRequireAuth } from '@/lib/auth';
 import { useToast } from '@/components/ui/use-toast';
@@ -349,98 +348,6 @@ const AuctionRoom = () => {
     }
   };
   
-  // Add the missing handleMarkUnsold function
-  const handleMarkUnsold = async (playerId: string) => {
-    try {
-      const player = players.find(p => p.id === playerId);
-      
-      if (!player) {
-        throw new Error('Player not found');
-      }
-      
-      const { success, error } = await markPlayerUnsold(playerId);
-      
-      if (!success) {
-        throw error || new Error('Failed to mark player as unsold');
-      }
-      
-      toast({
-        title: 'Player marked unsold',
-        description: `${player.name} moved to end of queue`,
-      });
-      
-      // Get the next player from the same category
-      const sameCategory = players.filter(p => 
-        !p.sold && 
-        p.id !== playerId && 
-        p.category === player.category
-      );
-      
-      if (sameCategory.length > 0) {
-        const nextPlayer = sameCategory.reduce((min, p) => 
-          p.priority < min.priority ? p : min, sameCategory[0]
-        );
-        setCurrentPlayer(nextPlayer);
-      } else {
-        // If no more players in the same category, check other categories
-        const categories = ['Bowler', 'Batter', 'All-Rounder'];
-        const availablePlayers = players.filter(p => !p.sold && p.id !== playerId);
-        
-        let foundNextPlayer = false;
-        for (const category of categories) {
-          const playersInCategory = availablePlayers.filter(p => p.category === category);
-          if (playersInCategory.length > 0) {
-            const nextPlayer = playersInCategory.reduce((min, p) => 
-              p.priority < min.priority ? p : min, playersInCategory[0]
-            );
-            setCurrentPlayer(nextPlayer);
-            foundNextPlayer = true;
-            toast({
-              title: 'Category completed',
-              description: `Moving to ${category} category.`,
-            });
-            break;
-          }
-        }
-        
-        if (!foundNextPlayer) {
-          setCurrentPlayer(null);
-          toast({
-            title: 'Auction complete',
-            description: 'All players have been sold or marked unsold',
-          });
-        }
-      }
-      
-      fetchAllData();
-    } catch (error: any) {
-      toast({
-        title: 'Error marking player unsold',
-        description: error.message,
-        variant: 'destructive',
-      });
-    }
-  };
-
-  const categorizedPlayers = players.reduce((acc, player) => {
-    if (!player.sold && player.id !== currentPlayer?.id) {
-      if (!acc[player.category]) {
-        acc[player.category] = [];
-      }
-      acc[player.category].push(player);
-    }
-    return acc;
-  }, {} as { [key: string]: Player[] });
-
-  if (authLoading || loading) {
-    return (
-      <div className="flex justify-center items-center min-h-screen">
-        <Loader2 className="h-8 w-8 animate-spin text-primary" />
-        <span className="ml-2">Loading auction data...</span>
-      </div>
-    );
-  }
-  
   return (
     <div className="container mx-auto px-4 py-8">
       <div className="mb-8">
@@ -502,7 +409,6 @@ const AuctionRoom = () => {
                   player={currentPlayer}
                   teams={teams}
                   onPlaceBid={handlePlaceBid}
-                  onMarkUnsold={handleMarkUnsold}
                   playerLimits={playerLimits}
                 />
               </CardFooter>

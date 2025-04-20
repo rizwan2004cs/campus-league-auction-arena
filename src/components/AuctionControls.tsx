@@ -1,3 +1,4 @@
+
 import { useState, useEffect } from 'react';
 import { Button } from '@/components/ui/button';
 import { Label } from '@/components/ui/label';
@@ -11,7 +12,7 @@ import {
 } from '@/components/ui/select';
 import { Team } from './TeamCard';
 import { Player } from './PlayerCard';
-import { Hammer, ArrowBigDown, Ban, RotateCcw, AlertCircle } from 'lucide-react';
+import { Hammer, ArrowBigDown, RotateCcw, AlertCircle } from 'lucide-react';
 import { modifyPlayerBid } from '@/services/teamService';
 import { useToast } from '@/hooks/use-toast';
 import { Alert, AlertDescription } from '@/components/ui/alert';
@@ -20,7 +21,6 @@ interface AuctionControlsProps {
   player: Player;
   teams: Team[];
   onPlaceBid: (playerId: string, teamId: string, bidAmount: number) => Promise<void>;
-  onMarkUnsold: (playerId: string) => Promise<void>;
   playerLimits: { [key: string]: number };
 }
 
@@ -28,7 +28,6 @@ const AuctionControls = ({
   player,
   teams,
   onPlaceBid,
-  onMarkUnsold,
   playerLimits
 }: AuctionControlsProps) => {
   const [selectedTeamId, setSelectedTeamId] = useState<string>('');
@@ -83,76 +82,6 @@ const AuctionControls = ({
     try {
       setLoading(true);
       await onPlaceBid(player.id, selectedTeamId, bidAmount);
-    } finally {
-      setLoading(false);
-      setSelectedTeamId('');
-      setBidAmount(player.base_price || 0);
-    }
-  };
-  
-  const handleMarkUnsold = async () => {
-    if (!player || !player.id) return;
-    
-    try {
-      setLoading(true);
-      setError(null);
-      await onMarkUnsold(player.id);
-    } catch (error: any) {
-      setError(error.message || 'Error marking player as unsold');
-      toast({
-        title: 'Error marking player as unsold',
-        description: error.message || 'An unexpected error occurred',
-        variant: 'destructive',
-      });
-    } finally {
-      setLoading(false);
-    }
-  };
-
-  const handleModifyBid = async () => {
-    if (!player || !player.id) return;
-    
-    try {
-      setLoading(true);
-      
-      if (selectedTeamId && bidAmount > 0) {
-        const selectedTeam = teams.find(t => t.id === selectedTeamId);
-        if (!selectedTeam || bidAmount > selectedTeam.purse) {
-          toast({
-            title: 'Invalid bid modification',
-            description: `Bid amount exceeds team's purse. Maximum bid allowed: ${selectedTeam?.purse} Cr`,
-            variant: 'destructive',
-          });
-          setLoading(false);
-          return;
-        }
-        
-        const { success, error } = await modifyPlayerBid(player.id, {
-          sold: true,
-          sold_to: selectedTeamId,
-          bid_price: bidAmount
-        });
-        
-        if (success) {
-          toast({
-            title: 'Bid modified',
-            description: `Player has been assigned to a new team with bid amount ${bidAmount} Cr`,
-          });
-          await onPlaceBid(player.id, selectedTeamId, bidAmount);
-        } else {
-          toast({
-            title: 'Error modifying bid',
-            description: error?.message || 'An error occurred',
-            variant: 'destructive',
-          });
-        }
-      } else {
-        await onMarkUnsold(player.id);
-        toast({
-          title: 'Player released',
-          description: 'Player is now available for rebidding',
-        });
-      }
     } finally {
       setLoading(false);
       setSelectedTeamId('');
@@ -218,34 +147,13 @@ const AuctionControls = ({
         )}
         
         <div className="flex flex-col space-y-2 pt-2">
-          {!player.sold ? (
-            <Button
-              className="w-full"
-              onClick={handlePlaceBid}
-              disabled={!selectedTeamId || bidAmount < player.base_price || loading || eligibleTeams.length === 0 || !!error}
-            >
-              <Hammer className="mr-2 h-4 w-4" />
-              Place Bid
-            </Button>
-          ) : (
-            <Button
-              className="w-full"
-              onClick={handleModifyBid}
-              disabled={loading || (selectedTeamId === '' && player.sold) || !!error}
-            >
-              <RotateCcw className="mr-2 h-4 w-4" />
-              {selectedTeamId ? 'Change Team/Bid' : 'Release Player'}
-            </Button>
-          )}
-          
           <Button
-            variant="outline"
             className="w-full"
-            onClick={handleMarkUnsold}
-            disabled={loading}
+            onClick={handlePlaceBid}
+            disabled={!selectedTeamId || bidAmount < player.base_price || loading || eligibleTeams.length === 0 || !!error}
           >
-            <Ban className="mr-2 h-4 w-4" />
-            Mark Unsold
+            <Hammer className="mr-2 h-4 w-4" />
+            Place Bid
           </Button>
         </div>
       </div>
@@ -254,3 +162,4 @@ const AuctionControls = ({
 };
 
 export default AuctionControls;
+
