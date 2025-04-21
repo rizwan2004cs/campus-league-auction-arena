@@ -1,3 +1,4 @@
+
 import { useEffect, useState } from 'react';
 import { useRequireAuth } from '@/lib/auth';
 import { useToast } from '@/components/ui/use-toast';
@@ -25,7 +26,6 @@ import {
   Users, 
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
-import { markPlayerUnsold } from '@/services/teamService';
 
 const AuctionRoom = () => {
   const { user, loading: authLoading } = useRequireAuth();
@@ -47,6 +47,7 @@ const AuctionRoom = () => {
   });
   const [loading, setLoading] = useState(true);
   
+  // Fetch settings
   const fetchSettings = async () => {
     try {
       const { data, error } = await supabase
@@ -56,6 +57,7 @@ const AuctionRoom = () => {
         .single();
         
       if (error) {
+        // If no settings exist, create default
         await supabase
           .from('settings')
           .insert([
@@ -82,6 +84,7 @@ const AuctionRoom = () => {
     }
   };
   
+  // Fetch players
   const fetchPlayers = async () => {
     try {
       const { data, error } = await supabase
@@ -96,12 +99,14 @@ const AuctionRoom = () => {
       const unsoldPlayers = (data || []).filter(player => !player.sold);
       setPlayers(unsoldPlayers);
       
+      // Set current player
       if (unsoldPlayers.length > 0) {
         setCurrentPlayer(unsoldPlayers[0]);
       } else {
         setCurrentPlayer(null);
       }
       
+      // Calculate category counts
       const counts = {
         'Bowler': 0,
         'Batter': 0,
@@ -122,8 +127,10 @@ const AuctionRoom = () => {
     }
   };
   
+  // Fetch teams
   const fetchTeams = async () => {
     try {
+      // Get teams
       const { data: teamData, error: teamError } = await supabase
         .from('teams')
         .select('*')
@@ -135,6 +142,7 @@ const AuctionRoom = () => {
       
       setTeams(teamData || []);
       
+      // Get players for each team
       const teamsWithPlayersArray = await Promise.all(
         (teamData || []).map(async (team) => {
           const { data: teamPlayers, error: playersError } = await supabase
@@ -151,6 +159,7 @@ const AuctionRoom = () => {
             return { ...team, players: [] };
           }
           
+          // Transform data to include players
           const players = (teamPlayers || []).map(tp => ({
             ...tp.players,
             bid_price: tp.bid_price
@@ -172,6 +181,7 @@ const AuctionRoom = () => {
     }
   };
   
+  // Fetch all data
   const fetchAllData = async () => {
     setLoading(true);
     await fetchSettings();
@@ -183,6 +193,7 @@ const AuctionRoom = () => {
     if (user) {
       fetchAllData();
       
+      // Set up realtime subscriptions
       const playersSubscription = supabase
         .channel('players-changes')
         .on('postgres_changes', { 
@@ -224,6 +235,12 @@ const AuctionRoom = () => {
     }
   }, [user]);
   
+  // Handle selecting a player from the list
+  const handleSelectPlayer = (player: Player) => {
+    setCurrentPlayer(player);
+  };
+  
+  // Place bid
   const handlePlaceBid = async (playerId: string, teamId: string, bidAmount: number) => {
     try {
       const player = players.find(p => p.id === playerId);
@@ -233,10 +250,12 @@ const AuctionRoom = () => {
         throw new Error('Player or team not found');
       }
       
+      // Validate bid amount against team purse
       if (bidAmount > team.purse) {
         throw new Error(`Bid amount (${bidAmount} Cr) exceeds team's purse (${team.purse} Cr)`);
       }
       
+      // Update player
       const { error: playerError } = await supabase
         .from('players')
         .update({ 
@@ -250,6 +269,7 @@ const AuctionRoom = () => {
         throw playerError;
       }
       
+      // Update team
       const newPurse = team.purse - bidAmount;
       const newPoints = team.points + player.points;
       
@@ -265,6 +285,7 @@ const AuctionRoom = () => {
         throw teamError;
       }
       
+      // Add to team_players
       const { error: teamPlayerError } = await supabase
         .from('team_players')
         .insert([{ 
@@ -282,45 +303,19 @@ const AuctionRoom = () => {
         description: `${player.name} sold to ${team.name} for ${bidAmount} Cr`,
       });
       
-      const sameCategory = players.filter(p => 
-        !p.sold && 
-        p.id !== playerId && 
-        p.category === player.category
-      );
-
-      if (sameCategory.length > 0) {
-        const nextPlayer = sameCategory.reduce((min, p) => 
-          p.priority < min.priority ? p : min, sameCategory[0]
-        );
+      // Move to next player
+      const nextPlayer = players.find(p => p.id !== playerId && !p.sold);
+      if (nextPlayer) {
         setCurrentPlayer(nextPlayer);
       } else {
-        const categories = ['Bowler', 'Batter', 'All-Rounder'];
-        const availablePlayers = players.filter(p => !p.sold);
-        
-        for (const category of categories) {
-          const playersInCategory = availablePlayers.filter(p => p.category === category);
-          if (playersInCategory.length > 0) {
-            const nextPlayer = playersInCategory.reduce((min, p) => 
-              p.priority < min.priority ? p : min, playersInCategory[0]
-            );
-            setCurrentPlayer(nextPlayer);
-            toast({
-              title: 'Category completed',
-              description: `All ${player.category}s have been sold. Moving to ${category} category.`,
-            });
-            break;
-          }
-        }
-        
-        if (!availablePlayers.length) {
-          setCurrentPlayer(null);
-          toast({
-            title: 'Auction complete',
-            description: 'All players have been sold',
-          });
-        }
+        setCurrentPlayer(null);
+        toast({
+          title: 'Auction complete',
+          description: 'All players have been sold',
+        });
       }
       
+      // Refresh data
       fetchAllData();
     } catch (error: any) {
       toast({
@@ -330,23 +325,76 @@ const AuctionRoom = () => {
       });
     }
   };
-
-  const handleSelectPlayer = (player: Player) => {
-    const sameCategory = players.filter(p => 
-      !p.sold && 
-      p.category === player.category
-    );
-
-    if (sameCategory.length > 0) {
-      setCurrentPlayer(player);
-    } else {
+  
+  // Mark player as unsold
+  const handleMarkUnsold = async (playerId: string) => {
+    try {
+      const player = players.find(p => p.id === playerId);
+      
+      if (!player) {
+        throw new Error('Player not found');
+      }
+      
+      // Find max priority for this category
+      const maxPriority = Math.max(
+        ...players
+          .filter(p => p.category === player.category)
+          .map(p => p.priority)
+      );
+      
+      // Update player priority to move to end of category
+      const { error } = await supabase
+        .from('players')
+        .update({ priority: maxPriority + 1 })
+        .eq('id', playerId);
+        
+      if (error) {
+        throw error;
+      }
+      
       toast({
-        title: 'Category unavailable',
-        description: `No ${player.category}s available for auction.`,
+        title: 'Player marked unsold',
+        description: `${player.name} moved to end of queue`,
+      });
+      
+      // Move to next player
+      const remainingPlayers = players.filter(p => p.id !== playerId);
+      if (remainingPlayers.length > 0) {
+        setCurrentPlayer(remainingPlayers[0]);
+      } else {
+        setCurrentPlayer(null);
+      }
+      
+      // Refresh data
+      fetchAllData();
+    } catch (error: any) {
+      toast({
+        title: 'Error marking player unsold',
+        description: error.message,
         variant: 'destructive',
       });
     }
   };
+  
+  // Group players by category
+  const categorizedPlayers = players.reduce((acc, player) => {
+    if (!player.sold && player.id !== currentPlayer?.id) {
+      if (!acc[player.category]) {
+        acc[player.category] = [];
+      }
+      acc[player.category].push(player);
+    }
+    return acc;
+  }, {} as { [key: string]: Player[] });
+  
+  if (authLoading || loading) {
+    return (
+      <div className="flex justify-center items-center min-h-screen">
+        <Loader2 className="h-8 w-8 animate-spin text-primary" />
+        <span className="ml-2">Loading auction data...</span>
+      </div>
+    );
+  }
   
   return (
     <div className="container mx-auto px-4 py-8">
@@ -355,6 +403,7 @@ const AuctionRoom = () => {
         <p className="text-muted-foreground">Bid on players for your teams</p>
       </div>
       
+      {/* Category counts */}
       <div className="grid grid-cols-3 gap-4 mb-8">
         <div className="card-with-shadow flex items-center space-x-4">
           <Badge variant="outline" className="bg-green-100 text-green-800 px-3 py-1 text-lg">
@@ -388,7 +437,9 @@ const AuctionRoom = () => {
       </div>
       
       <div className="grid lg:grid-cols-3 gap-8">
+        {/* Auction column (2/3) */}
         <div className="lg:col-span-2 space-y-6">
+          {/* Current player */}
           {currentPlayer ? (
             <Card className="overflow-hidden">
               <CardHeader className="gradient-header text-white pb-2">
@@ -409,6 +460,7 @@ const AuctionRoom = () => {
                   player={currentPlayer}
                   teams={teams}
                   onPlaceBid={handlePlaceBid}
+                  onMarkUnsold={handleMarkUnsold}
                   playerLimits={playerLimits}
                 />
               </CardFooter>
@@ -425,6 +477,7 @@ const AuctionRoom = () => {
             </Card>
           )}
           
+          {/* Upcoming players */}
           <Card>
             <CardHeader className="pb-2">
               <CardTitle className="flex items-center">
@@ -486,6 +539,7 @@ const AuctionRoom = () => {
           </Card>
         </div>
         
+        {/* Leaderboard column (1/3) */}
         <div className="space-y-6">
           <Leaderboard teams={teams} />
           
