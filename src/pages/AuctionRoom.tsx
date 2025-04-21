@@ -1,4 +1,3 @@
-
 import { useEffect, useState } from 'react';
 import { useRequireAuth } from '@/lib/auth';
 import { useToast } from '@/components/ui/use-toast';
@@ -47,7 +46,6 @@ const AuctionRoom = () => {
   });
   const [loading, setLoading] = useState(true);
   
-  // Fetch settings
   const fetchSettings = async () => {
     try {
       const { data, error } = await supabase
@@ -57,7 +55,6 @@ const AuctionRoom = () => {
         .single();
         
       if (error) {
-        // If no settings exist, create default
         await supabase
           .from('settings')
           .insert([
@@ -84,7 +81,6 @@ const AuctionRoom = () => {
     }
   };
   
-  // Fetch players
   const fetchPlayers = async () => {
     try {
       const { data, error } = await supabase
@@ -99,14 +95,12 @@ const AuctionRoom = () => {
       const unsoldPlayers = (data || []).filter(player => !player.sold);
       setPlayers(unsoldPlayers);
       
-      // Set current player
       if (unsoldPlayers.length > 0) {
         setCurrentPlayer(unsoldPlayers[0]);
       } else {
         setCurrentPlayer(null);
       }
       
-      // Calculate category counts
       const counts = {
         'Bowler': 0,
         'Batter': 0,
@@ -127,10 +121,8 @@ const AuctionRoom = () => {
     }
   };
   
-  // Fetch teams
   const fetchTeams = async () => {
     try {
-      // Get teams
       const { data: teamData, error: teamError } = await supabase
         .from('teams')
         .select('*')
@@ -142,7 +134,6 @@ const AuctionRoom = () => {
       
       setTeams(teamData || []);
       
-      // Get players for each team
       const teamsWithPlayersArray = await Promise.all(
         (teamData || []).map(async (team) => {
           const { data: teamPlayers, error: playersError } = await supabase
@@ -159,7 +150,6 @@ const AuctionRoom = () => {
             return { ...team, players: [] };
           }
           
-          // Transform data to include players
           const players = (teamPlayers || []).map(tp => ({
             ...tp.players,
             bid_price: tp.bid_price
@@ -181,7 +171,6 @@ const AuctionRoom = () => {
     }
   };
   
-  // Fetch all data
   const fetchAllData = async () => {
     setLoading(true);
     await fetchSettings();
@@ -193,7 +182,6 @@ const AuctionRoom = () => {
     if (user) {
       fetchAllData();
       
-      // Set up realtime subscriptions
       const playersSubscription = supabase
         .channel('players-changes')
         .on('postgres_changes', { 
@@ -235,148 +223,6 @@ const AuctionRoom = () => {
     }
   }, [user]);
   
-  // Handle selecting a player from the list
-  const handleSelectPlayer = (player: Player) => {
-    setCurrentPlayer(player);
-  };
-  
-  // Place bid
-  const handlePlaceBid = async (playerId: string, teamId: string, bidAmount: number) => {
-    try {
-      const player = players.find(p => p.id === playerId);
-      const team = teams.find(t => t.id === teamId);
-      
-      if (!player || !team) {
-        throw new Error('Player or team not found');
-      }
-      
-      // Validate bid amount against team purse
-      if (bidAmount > team.purse) {
-        throw new Error(`Bid amount (${bidAmount} Cr) exceeds team's purse (${team.purse} Cr)`);
-      }
-      
-      // Update player
-      const { error: playerError } = await supabase
-        .from('players')
-        .update({ 
-          sold: true, 
-          sold_to: teamId, 
-          bid_price: bidAmount 
-        })
-        .eq('id', playerId);
-        
-      if (playerError) {
-        throw playerError;
-      }
-      
-      // Update team
-      const newPurse = team.purse - bidAmount;
-      const newPoints = team.points + player.points;
-      
-      const { error: teamError } = await supabase
-        .from('teams')
-        .update({ 
-          purse: newPurse, 
-          points: newPoints 
-        })
-        .eq('id', teamId);
-        
-      if (teamError) {
-        throw teamError;
-      }
-      
-      // Add to team_players
-      const { error: teamPlayerError } = await supabase
-        .from('team_players')
-        .insert([{ 
-          team_id: teamId, 
-          player_id: playerId, 
-          bid_price: bidAmount 
-        }]);
-        
-      if (teamPlayerError) {
-        throw teamPlayerError;
-      }
-      
-      toast({
-        title: 'Bid successful',
-        description: `${player.name} sold to ${team.name} for ${bidAmount} Cr`,
-      });
-      
-      // Move to next player
-      const nextPlayer = players.find(p => p.id !== playerId && !p.sold);
-      if (nextPlayer) {
-        setCurrentPlayer(nextPlayer);
-      } else {
-        setCurrentPlayer(null);
-        toast({
-          title: 'Auction complete',
-          description: 'All players have been sold',
-        });
-      }
-      
-      // Refresh data
-      fetchAllData();
-    } catch (error: any) {
-      toast({
-        title: 'Error placing bid',
-        description: error.message,
-        variant: 'destructive',
-      });
-    }
-  };
-  
-  // Mark player as unsold
-  const handleMarkUnsold = async (playerId: string) => {
-    try {
-      const player = players.find(p => p.id === playerId);
-      
-      if (!player) {
-        throw new Error('Player not found');
-      }
-      
-      // Find max priority for this category
-      const maxPriority = Math.max(
-        ...players
-          .filter(p => p.category === player.category)
-          .map(p => p.priority)
-      );
-      
-      // Update player priority to move to end of category
-      const { error } = await supabase
-        .from('players')
-        .update({ priority: maxPriority + 1 })
-        .eq('id', playerId);
-        
-      if (error) {
-        throw error;
-      }
-      
-      toast({
-        title: 'Player marked unsold',
-        description: `${player.name} moved to end of queue`,
-      });
-      
-      // Move to next player
-      const remainingPlayers = players.filter(p => p.id !== playerId);
-      if (remainingPlayers.length > 0) {
-        setCurrentPlayer(remainingPlayers[0]);
-      } else {
-        setCurrentPlayer(null);
-      }
-      
-      // Refresh data
-      fetchAllData();
-    } catch (error: any) {
-      toast({
-        title: 'Error marking player unsold',
-        description: error.message,
-        variant: 'destructive',
-      });
-    }
-  };
-  
-  // Group players by category
   const categorizedPlayers = players.reduce((acc, player) => {
     if (!player.sold && player.id !== currentPlayer?.id) {
       if (!acc[player.category]) {
@@ -403,7 +249,6 @@ const AuctionRoom = () => {
         <p className="text-muted-foreground">Bid on players for your teams</p>
       </div>
       
-      {/* Category counts */}
       <div className="grid grid-cols-3 gap-4 mb-8">
         <div className="card-with-shadow flex items-center space-x-4">
           <Badge variant="outline" className="bg-green-100 text-green-800 px-3 py-1 text-lg">
@@ -437,9 +282,7 @@ const AuctionRoom = () => {
       </div>
       
       <div className="grid lg:grid-cols-3 gap-8">
-        {/* Auction column (2/3) */}
         <div className="lg:col-span-2 space-y-6">
-          {/* Current player */}
           {currentPlayer ? (
             <Card className="overflow-hidden">
               <CardHeader className="gradient-header text-white pb-2">
@@ -460,7 +303,6 @@ const AuctionRoom = () => {
                   player={currentPlayer}
                   teams={teams}
                   onPlaceBid={handlePlaceBid}
-                  onMarkUnsold={handleMarkUnsold}
                   playerLimits={playerLimits}
                 />
               </CardFooter>
@@ -477,7 +319,6 @@ const AuctionRoom = () => {
             </Card>
           )}
           
-          {/* Upcoming players */}
           <Card>
             <CardHeader className="pb-2">
               <CardTitle className="flex items-center">
@@ -539,7 +380,6 @@ const AuctionRoom = () => {
           </Card>
         </div>
         
-        {/* Leaderboard column (1/3) */}
         <div className="space-y-6">
           <Leaderboard teams={teams} />
           

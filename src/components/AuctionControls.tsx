@@ -1,3 +1,4 @@
+
 import { useState, useEffect } from 'react';
 import { Button } from '@/components/ui/button';
 import { Label } from '@/components/ui/label';
@@ -11,7 +12,7 @@ import {
 } from '@/components/ui/select';
 import { Team } from './TeamCard';
 import { Player } from './PlayerCard';
-import { Hammer, ArrowBigDown, Ban, RotateCcw, AlertCircle } from 'lucide-react';
+import { Hammer, RotateCcw, AlertCircle } from 'lucide-react';
 import { modifyPlayerBid } from '@/services/teamService';
 import { useToast } from '@/hooks/use-toast';
 import { Alert, AlertDescription } from '@/components/ui/alert';
@@ -20,7 +21,6 @@ interface AuctionControlsProps {
   player: Player;
   teams: Team[];
   onPlaceBid: (playerId: string, teamId: string, bidAmount: number) => Promise<void>;
-  onMarkUnsold: (playerId: string) => Promise<void>;
   playerLimits: { [key: string]: number };
 }
 
@@ -28,7 +28,6 @@ const AuctionControls = ({
   player,
   teams,
   onPlaceBid,
-  onMarkUnsold,
   playerLimits
 }: AuctionControlsProps) => {
   const [selectedTeamId, setSelectedTeamId] = useState<string>('');
@@ -90,17 +89,6 @@ const AuctionControls = ({
     }
   };
   
-  const handleMarkUnsold = async () => {
-    if (!player || !player.id) return;
-    
-    try {
-      setLoading(true);
-      await onMarkUnsold(player.id);
-    } finally {
-      setLoading(false);
-    }
-  };
-
   const handleModifyBid = async () => {
     if (!player || !player.id) return;
     
@@ -138,12 +126,6 @@ const AuctionControls = ({
             variant: 'destructive',
           });
         }
-      } else {
-        await onMarkUnsold(player.id);
-        toast({
-          title: 'Player released',
-          description: 'Player is now available for rebidding',
-        });
       }
     } finally {
       setLoading(false);
@@ -151,7 +133,7 @@ const AuctionControls = ({
       setBidAmount(player.base_price || 0);
     }
   };
-  
+
   return (
     <div className="card-with-shadow">
       <h3 className="text-lg font-semibold mb-4">Auction Controls</h3>
@@ -229,16 +211,6 @@ const AuctionControls = ({
               {selectedTeamId ? 'Change Team/Bid' : 'Release Player'}
             </Button>
           )}
-          
-          <Button
-            variant="outline"
-            className="w-full"
-            onClick={handleMarkUnsold}
-            disabled={loading}
-          >
-            <Ban className="mr-2 h-4 w-4" />
-            Mark Unsold
-          </Button>
         </div>
       </div>
     </div>
