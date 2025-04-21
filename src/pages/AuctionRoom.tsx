@@ -1,3 +1,4 @@
+
 import { useEffect, useState } from 'react';
 import { useRequireAuth } from '@/lib/auth';
 import { useToast } from '@/components/ui/use-toast';
@@ -46,6 +47,7 @@ const AuctionRoom = () => {
     'All-Rounder': 2
   });
   const [loading, setLoading] = useState(true);
+  const [bidLoading, setBidLoading] = useState(false);
   
   const fetchSettings = async () => {
     try {
@@ -96,10 +98,11 @@ const AuctionRoom = () => {
       const unsoldPlayers = (data || []).filter(player => !player.sold);
       setPlayers(unsoldPlayers);
       
-      if (unsoldPlayers.length > 0) {
+      if (unsoldPlayers.length > 0 && !currentPlayer) {
         setCurrentPlayer(unsoldPlayers[0]);
-      } else {
-        setCurrentPlayer(null);
+      } else if (unsoldPlayers.length > 0 && currentPlayer && currentPlayer.sold) {
+        // If current player was sold, select the next one
+        setCurrentPlayer(unsoldPlayers[0]);
       }
       
       const counts = {
@@ -135,6 +138,7 @@ const AuctionRoom = () => {
       
       setTeams(teamData || []);
       
+      // Use Promise.all for parallel requests to improve performance
       const teamsWithPlayersArray = await Promise.all(
         (teamData || []).map(async (team) => {
           const { data: teamPlayers, error: playersError } = await supabase
@@ -236,7 +240,7 @@ const AuctionRoom = () => {
   
   const handlePlaceBid = async (playerId: string, teamId: string, bidAmount: number) => {
     try {
-      setLoading(true);
+      setBidLoading(true);
       
       const { success, error } = await modifyPlayerBid(playerId, {
         sold: true,
@@ -253,8 +257,48 @@ const AuctionRoom = () => {
         description: `Player has been sold for ${bidAmount} Cr`,
       });
       
-      await fetchPlayers();
-      await fetchTeams();
+      // Update local state immediately to avoid waiting for realtime updates
+      if (currentPlayer && currentPlayer.id === playerId) {
+        setCurrentPlayer(prev => prev ? {...prev, sold: true, sold_to: teamId, bid_price: bidAmount} : null);
+        
+        // Find the next unsold player
+        const nextPlayer = players.find(p => !p.sold && p.id !== playerId);
+        if (nextPlayer) {
+          setCurrentPlayer(nextPlayer);
+        }
+      }
+      
+      // Update teams count locally
+      setTeams(prevTeams => {
+        return prevTeams.map(team => {
+          if (team.id === teamId) {
+            const playerToAdd = players.find(p => p.id === playerId);
+            const updatedPurse = team.purse - bidAmount;
+            const updatedPoints = team.points + (playerToAdd?.points || 0);
+            return { ...team, purse: updatedPurse, points: updatedPoints };
+          }
+          return team;
+        });
+      });
+      
+      // Update player list locally
+      setPlayers(prevPlayers => {
+        return prevPlayers.map(player => {
+          if (player.id === playerId) {
+            return { ...player, sold: true, sold_to: teamId, bid_price: bidAmount };
+          }
+          return player;
+        }).filter(p => !p.sold || p.id === playerId);
+      });
+      
+      // Update category counts locally
+      const soldPlayer = players.find(p => p.id === playerId);
+      if (soldPlayer) {
+        setCategoryCounts(prev => ({
+          ...prev,
+          [soldPlayer.category]: Math.max(0, prev[soldPlayer.category as keyof typeof prev] - 1)
+        }));
+      }
       
     } catch (error: any) {
       toast({
@@ -263,7 +307,13 @@ const AuctionRoom = () => {
         variant: 'destructive',
       });
     } finally {
-      setLoading(false);
+      setBidLoading(false);
+      
+      // Fetch fresh data after a short delay to ensure consistency
+      setTimeout(() => {
+        fetchPlayers();
+        fetchTeams();
+      }, 500);
     }
   };
   
@@ -342,6 +392,7 @@ const AuctionRoom = () => {
                   teams={teams}
                   onPlaceBid={handlePlaceBid}
                   playerLimits={playerLimits}
+                  bidLoading={bidLoading}
                 />
               </CardFooter>
             </Card>

@@ -12,7 +12,7 @@ import {
 } from '@/components/ui/select';
 import { Team } from './TeamCard';
 import { Player } from './PlayerCard';
-import { Hammer, RotateCcw, AlertCircle } from 'lucide-react';
+import { Hammer, RotateCcw, AlertCircle, Loader2 } from 'lucide-react';
 import { modifyPlayerBid } from '@/services/teamService';
 import { useToast } from '@/hooks/use-toast';
 import { Alert, AlertDescription } from '@/components/ui/alert';
@@ -22,13 +22,15 @@ interface AuctionControlsProps {
   teams: Team[];
   onPlaceBid: (playerId: string, teamId: string, bidAmount: number) => Promise<void>;
   playerLimits: { [key: string]: number };
+  bidLoading?: boolean;
 }
 
 const AuctionControls = ({
   player,
   teams,
   onPlaceBid,
-  playerLimits
+  playerLimits,
+  bidLoading = false
 }: AuctionControlsProps) => {
   const [selectedTeamId, setSelectedTeamId] = useState<string>('');
   const [bidAmount, setBidAmount] = useState<number>(player.base_price || 0);
@@ -144,6 +146,7 @@ const AuctionControls = ({
           <Select 
             value={selectedTeamId} 
             onValueChange={setSelectedTeamId}
+            disabled={bidLoading || loading}
           >
             <SelectTrigger id="team-select" className="w-full">
               <SelectValue placeholder="Select team to bid" />
@@ -175,6 +178,7 @@ const AuctionControls = ({
             value={bidAmount}
             onChange={(e) => setBidAmount(parseFloat(e.target.value))}
             className={error ? "border-red-500" : ""}
+            disabled={bidLoading || loading}
           />
           <p className="text-xs text-muted-foreground">
             Minimum bid: {player.base_price} Cr
@@ -196,19 +200,37 @@ const AuctionControls = ({
             <Button
               className="w-full"
               onClick={handlePlaceBid}
-              disabled={!selectedTeamId || bidAmount < player.base_price || loading || eligibleTeams.length === 0 || !!error}
+              disabled={!selectedTeamId || bidAmount < player.base_price || loading || bidLoading || eligibleTeams.length === 0 || !!error}
             >
-              <Hammer className="mr-2 h-4 w-4" />
-              Place Bid
+              {bidLoading || loading ? (
+                <>
+                  <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                  Processing...
+                </>
+              ) : (
+                <>
+                  <Hammer className="mr-2 h-4 w-4" />
+                  Place Bid
+                </>
+              )}
             </Button>
           ) : (
             <Button
               className="w-full"
               onClick={handleModifyBid}
-              disabled={loading || (selectedTeamId === '' && player.sold) || !!error}
+              disabled={loading || bidLoading || (selectedTeamId === '' && player.sold) || !!error}
             >
-              <RotateCcw className="mr-2 h-4 w-4" />
-              {selectedTeamId ? 'Change Team/Bid' : 'Release Player'}
+              {bidLoading || loading ? (
+                <>
+                  <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                  Processing...
+                </>
+              ) : (
+                <>
+                  <RotateCcw className="mr-2 h-4 w-4" />
+                  {selectedTeamId ? 'Change Team/Bid' : 'Release Player'}
+                </>
+              )}
             </Button>
           )}
         </div>
