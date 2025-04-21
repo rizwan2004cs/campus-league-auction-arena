@@ -1,4 +1,3 @@
-
 import { Shield, Users, Pencil, Trash2 } from 'lucide-react';
 import { Card, CardContent, CardFooter, CardHeader } from '@/components/ui/card';
 import { Progress } from '@/components/ui/progress';
@@ -79,17 +78,17 @@ const TeamCard = ({
   };
   
   return (
-    <Card className="w-full overflow-hidden transition-all duration-300 hover:shadow-lg">
-      <CardHeader className="gradient-header text-white p-4">
+    <div className="modern-card overflow-hidden">
+      <div className="bg-gradient-azure p-4">
         <div className="flex items-center justify-between">
           <div className="flex items-center space-x-3">
-            <Shield className="h-6 w-6" />
-            <h3 className="text-xl font-bold truncate">{name}</h3>
+            <Shield className="h-6 w-6 text-white" />
+            <h3 className="text-xl font-bold text-white truncate">{name}</h3>
           </div>
           <div className="flex space-x-2">
             <Dialog open={isEditing} onOpenChange={setIsEditing}>
               <DialogTrigger asChild>
-                <Button variant="ghost" size="icon" className="h-8 w-8">
+                <Button variant="ghost" size="icon" className="h-8 w-8 text-white hover:bg-white/20">
                   <Pencil className="h-4 w-4" />
                 </Button>
               </DialogTrigger>
@@ -115,63 +114,61 @@ const TeamCard = ({
             <Button 
               variant="ghost" 
               size="icon" 
-              className="h-8 w-8"
+              className="h-8 w-8 text-white hover:bg-white/20"
               onClick={handleDelete}
             >
               <Trash2 className="h-4 w-4" />
             </Button>
           </div>
         </div>
-      </CardHeader>
+      </div>
       
-      <CardContent className="p-4">
-        <div className="space-y-4">
-          <div>
-            <div className="flex justify-between mb-1">
-              <span className="text-sm font-medium">Purse Left</span>
-              <span className="text-sm font-medium">{purse} Cr</span>
-            </div>
-            <Progress value={pursePercentage} className="h-2" />
+      <div className="p-4 space-y-4">
+        <div>
+          <div className="flex justify-between mb-1">
+            <span className="text-sm font-medium">Purse Left</span>
+            <span className="text-sm font-medium">{purse} Cr</span>
           </div>
-          
-          <div className="flex justify-between">
-            <div>
-              <span className="text-muted-foreground text-sm">Points:</span>
-              <span className="ml-1 font-medium">{points}</span>
-            </div>
-            
-            <div>
-              <span className="text-muted-foreground text-sm">Players:</span>
-              <span className="ml-1 font-medium">{players.length}</span>
-            </div>
-          </div>
-          
-          {showPlayers && players.length > 0 && (
-            <div className="mt-4">
-              <h4 className="font-medium text-sm flex items-center mb-2">
-                <Users className="h-4 w-4 mr-1" />
-                Team Players
-              </h4>
-              <ul className="text-sm divide-y">
-                {players.map((player) => (
-                  <li key={player.id} className="py-2 flex justify-between">
-                    <div>
-                      <span className="font-medium">{player.name}</span>
-                      <span className="ml-2 text-xs text-muted-foreground">
-                        {player.category}
-                      </span>
-                    </div>
-                    <span className="text-green-600 font-medium">
-                      {player.bid_price} Cr
-                    </span>
-                  </li>
-                ))}
-              </ul>
-            </div>
-          )}
+          <Progress value={pursePercentage} className="h-2 bg-gradient-bright" />
         </div>
-      </CardContent>
-    </Card>
+        
+        <div className="flex justify-between">
+          <div className="glass-card px-3 py-2">
+            <span className="text-muted-foreground text-sm">Points:</span>
+            <span className="ml-1 font-medium">{points}</span>
+          </div>
+          
+          <div className="glass-card px-3 py-2">
+            <span className="text-muted-foreground text-sm">Players:</span>
+            <span className="ml-1 font-medium">{players.length}</span>
+          </div>
+        </div>
+        
+        {showPlayers && players.length > 0 && (
+          <div className="mt-4">
+            <h4 className="font-medium text-sm flex items-center mb-2">
+              <Users className="h-4 w-4 mr-1" />
+              Team Players
+            </h4>
+            <div className="glass-card divide-y divide-gray-100">
+              {players.map((player) => (
+                <div key={player.id} className="py-2 px-3 flex justify-between">
+                  <div>
+                    <span className="font-medium">{player.name}</span>
+                    <span className="ml-2 text-xs text-muted-foreground">
+                      {player.category}
+                    </span>
+                  </div>
+                  <span className="text-green-600 font-medium">
+                    {player.bid_price} Cr
+                  </span>
+                </div>
+              ))}
+            </div>
+          </div>
+        )}
+      </div>
+    </div>
   );
 };
 
