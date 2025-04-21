@@ -1,4 +1,3 @@
-
 import { useEffect, useState } from 'react';
 import { useRequireAuth } from '@/lib/auth';
 import { useToast } from '@/components/ui/use-toast';
@@ -26,6 +25,7 @@ import {
   Users, 
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
+import { modifyPlayerBid } from '@/services/teamService';
 
 const AuctionRoom = () => {
   const { user, loading: authLoading } = useRequireAuth();
@@ -234,47 +234,18 @@ const AuctionRoom = () => {
     return acc;
   }, {} as { [key: string]: Player[] });
   
-  // Add the missing functions
   const handlePlaceBid = async (playerId: string, teamId: string, bidAmount: number) => {
     try {
       setLoading(true);
       
-      // Update player as sold
-      const { error: playerError } = await supabase
-        .from('players')
-        .update({
-          sold: true,
-          sold_to: teamId,
-          bid_price: bidAmount
-        })
-        .eq('id', playerId);
-        
-      if (playerError) throw playerError;
+      const { success, error } = await modifyPlayerBid(playerId, {
+        sold: true,
+        sold_to: teamId,
+        bid_price: bidAmount
+      });
       
-      // Add player to team
-      const { error: teamPlayerError } = await supabase
-        .from('team_players')
-        .insert([
-          {
-            team_id: teamId,
-            player_id: playerId,
-            bid_price: bidAmount
-          }
-        ]);
-        
-      if (teamPlayerError) throw teamPlayerError;
-      
-      // Update team's purse
-      const selectedTeam = teams.find(t => t.id === teamId);
-      if (selectedTeam) {
-        const updatedPurse = selectedTeam.purse - bidAmount;
-        
-        const { error: teamError } = await supabase
-          .from('teams')
-          .update({ purse: updatedPurse })
-          .eq('id', teamId);
-          
-        if (teamError) throw teamError;
+      if (!success) {
+        throw error || new Error('Failed to place bid');
       }
       
       toast({
@@ -282,7 +253,6 @@ const AuctionRoom = () => {
         description: `Player has been sold for ${bidAmount} Cr`,
       });
       
-      // Fetch updated data
       await fetchPlayers();
       await fetchTeams();
       
