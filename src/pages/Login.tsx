@@ -12,7 +12,8 @@ const Login = () => {
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [loading, setLoading] = useState(false);
-  const { login } = useAuth();
+  const [isSignUp, setIsSignUp] = useState(false);
+  const { login, signup } = useAuth();
   const navigate = useNavigate();
   const location = useLocation();
   
@@ -32,10 +33,17 @@ const Login = () => {
     
     try {
       setLoading(true);
-      await login(email, password);
-      navigate(from, { replace: true });
+      if (isSignUp) {
+        await signup(email, password);
+        setIsSignUp(false);
+        setEmail('');
+        setPassword('');
+      } else {
+        await login(email, password);
+        navigate(from, { replace: true });
+      }
     } catch (error) {
-      console.error('Login error:', error);
+      console.error('Auth error:', error);
     } finally {
       setLoading(false);
     }
@@ -53,9 +61,12 @@ const Login = () => {
         
         <Card>
           <CardHeader>
-            <CardTitle>Organizer Login</CardTitle>
+            <CardTitle>{isSignUp ? 'Create Account' : 'Organizer Login'}</CardTitle>
             <CardDescription>
-              Enter your credentials to access the auction dashboard
+              {isSignUp 
+                ? 'Create a new account to start organizing auctions'
+                : 'Enter your credentials to access the auction dashboard'
+              }
             </CardDescription>
           </CardHeader>
           <form onSubmit={handleSubmit}>
@@ -83,13 +94,24 @@ const Login = () => {
                 />
               </div>
             </CardContent>
-            <CardFooter>
+            <CardFooter className="flex flex-col space-y-2">
               <Button 
                 type="submit" 
                 className="w-full gradient-header" 
                 disabled={loading}
               >
-                {loading ? 'Logging in...' : 'Login'}
+                {loading 
+                  ? (isSignUp ? 'Creating Account...' : 'Logging in...') 
+                  : (isSignUp ? 'Create Account' : 'Login')
+                }
+              </Button>
+              <Button 
+                type="button" 
+                variant="ghost" 
+                className="w-full" 
+                onClick={() => setIsSignUp(!isSignUp)}
+              >
+                {isSignUp ? 'Already have an account? Login' : "Don't have an account? Sign up"}
               </Button>
             </CardFooter>
           </form>

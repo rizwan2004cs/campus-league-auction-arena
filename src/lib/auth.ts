@@ -71,6 +71,38 @@ export function useAuth() {
     }
   };
   
+  const signup = async (email: string, password: string) => {
+    try {
+      const redirectUrl = `${window.location.origin}/`;
+      
+      const { data, error } = await supabase.auth.signUp({
+        email,
+        password,
+        options: {
+          emailRedirectTo: redirectUrl
+        }
+      });
+      
+      if (error) {
+        throw error;
+      }
+      
+      toast({
+        title: 'Account created successfully',
+        description: 'Please check your email to verify your account.',
+      });
+      
+      return data;
+    } catch (error: any) {
+      toast({
+        title: 'Signup failed',
+        description: error.message,
+        variant: 'destructive',
+      });
+      throw error;
+    }
+  };
+
   const logout = async () => {
     try {
       const { error } = await supabase.auth.signOut();
@@ -97,6 +129,7 @@ export function useAuth() {
     session,
     loading,
     login,
+    signup,
     logout,
   };
 }
