@@ -3,7 +3,7 @@ import { useEffect, useState } from 'react';
 import { useRequireAuth } from '@/lib/auth';
 import { useToast } from '@/components/ui/use-toast';
 import { supabase } from '@/integrations/supabase/client';
-import { fetchTeams, fetchPublicAuctionData, modifyPlayerBid } from '@/services/teamService';
+import { fetchTeams as fetchTeamsService, fetchPublicAuctionData, modifyPlayerBid } from '@/services/teamService';
 import PlayerCard, { Player } from '@/components/PlayerCard';
 import TeamCard, { Team } from '@/components/TeamCard';
 import AuctionControls from '@/components/AuctionControls';
@@ -125,44 +125,20 @@ const AuctionRoom = () => {
   
   const fetchTeams = async () => {
     try {
-      const { data: teamData, error: teamError } = await supabase
-        .from('teams')
-        .select('*')
-        .order('points', { ascending: false });
-        
-      if (teamError) {
-        throw teamError;
+      // Fetch teams and teams with players using service functions
+      const { teams: fetchedTeams, error: teamsError } = await fetchTeamsService();
+      const { teams: fetchedTeamsWithPlayers, error: playersError } = await fetchPublicAuctionData();
+      
+      if (teamsError) {
+        throw teamsError;
       }
       
-      setTeams(teamData || []);
+      if (playersError) {
+        throw playersError;
+      }
       
-      // Use Promise.all for parallel requests to improve performance
-      const teamsWithPlayersArray = await Promise.all(
-        (teamData || []).map(async (team) => {
-          const { data: teamPlayers, error: playersError } = await supabase
-            .from('team_players')
-            .select(`
-              player_id,
-              bid_price,
-              players:player_id (*)
-            `)
-            .eq('team_id', team.id);
-            
-          if (playersError) {
-            console.error('Error fetching team players:', playersError);
-            return { ...team, players: [] };
-          }
-          
-          const players = (teamPlayers || []).map(tp => ({
-            ...tp.players,
-            bid_price: tp.bid_price
-          }));
-          
-          return { ...team, players };
-        })
-      );
-      
-      setTeamsWithPlayers(teamsWithPlayersArray);
+      setTeams(fetchedTeams);
+      setTeamsWithPlayers(fetchedTeamsWithPlayers);
     } catch (error: any) {
       toast({
         title: 'Error fetching teams',
