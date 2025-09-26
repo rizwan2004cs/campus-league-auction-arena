@@ -2,7 +2,7 @@
 import { useEffect, useState } from 'react';
 import { useRequireAuth } from '@/lib/auth';
 import { useToast } from '@/components/ui/use-toast';
-import supabase from '@/lib/supabase';
+import { supabase } from '@/integrations/supabase/client';
 import PlayerCard, { Player } from '@/components/PlayerCard';
 import TeamCard, { Team } from '@/components/TeamCard';
 import AuctionControls from '@/components/AuctionControls';

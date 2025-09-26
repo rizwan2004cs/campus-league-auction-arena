@@ -19,7 +19,7 @@ import {
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { useToast } from '@/components/ui/use-toast';
 import { useRequireAuth } from '@/lib/auth';
-import supabase from '@/lib/supabase';
+import { supabase } from '@/integrations/supabase/client';
 import PlayerCard, { Player } from '@/components/PlayerCard';
 import { Badge } from '@/components/ui/badge';
 import { ImagePlus, Loader2, PlusCircle, User2 } from 'lucide-react';

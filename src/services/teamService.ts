@@ -1,4 +1,4 @@
-import supabase from '@/lib/supabase';
+import { supabase } from '@/integrations/supabase/client';
 import { Team } from '@/components/TeamCard';
 import { Player } from '@/components/PlayerCard';
 

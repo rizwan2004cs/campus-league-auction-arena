@@ -3,7 +3,7 @@ import { Team } from './TeamCard';
 import { ChevronsUp, Trophy } from 'lucide-react';
 import { useState, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import supabase from '@/lib/supabase';
+import { supabase } from '@/integrations/supabase/client';
 
 interface LeaderboardProps {
   teams: Team[];
