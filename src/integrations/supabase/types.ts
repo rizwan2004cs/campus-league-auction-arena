@@ -21,6 +21,8 @@ export type Database = {
           created_at: string
           id: string
           name: string
+          points: number
+          priority: number
           sold_price: number | null
           team_id: string | null
           updated_at: string
@@ -31,6 +33,8 @@ export type Database = {
           created_at?: string
           id?: string
           name: string
+          points?: number
+          priority?: number
           sold_price?: number | null
           team_id?: string | null
           updated_at?: string
@@ -41,6 +45,8 @@ export type Database = {
           created_at?: string
           id?: string
           name?: string
+          points?: number
+          priority?: number
           sold_price?: number | null
           team_id?: string | null
           updated_at?: string
@@ -151,6 +157,7 @@ export type Database = {
           id: string
           name: string
           owner_id: string
+          points: number
           purse: number
           updated_at: string
         }
@@ -159,6 +166,7 @@ export type Database = {
           id?: string
           name: string
           owner_id: string
+          points?: number
           purse?: number
           updated_at?: string
         }
@@ -167,6 +175,7 @@ export type Database = {
           id?: string
           name?: string
           owner_id?: string
+          points?: number
           purse?: number
           updated_at?: string
         }

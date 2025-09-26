@@ -20,6 +20,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { useToast } from '@/components/ui/use-toast';
 import { useRequireAuth } from '@/lib/auth';
 import { supabase } from '@/integrations/supabase/client';
+import { fetchPublicAuctionData } from '@/services/teamService';
 import PlayerCard, { Player } from '@/components/PlayerCard';
 import { Badge } from '@/components/ui/badge';
 import { ImagePlus, Loader2, PlusCircle, User2 } from 'lucide-react';
@@ -51,16 +52,13 @@ const Dashboard = () => {
     try {
       setLoading(true);
       
-      const { data, error } = await supabase
-        .from('players')
-        .select('*')
-        .order('priority', { ascending: true });
-        
+      const { players: fetchedPlayers, error } = await fetchPublicAuctionData();
+      
       if (error) {
         throw error;
       }
       
-      setPlayers(data || []);
+      setPlayers(fetchedPlayers);
       
       // Calculate category counts
       const counts = {
@@ -69,7 +67,7 @@ const Dashboard = () => {
         'All-Rounder': 0
       };
       
-      (data || []).forEach((player) => {
+      fetchedPlayers.forEach((player) => {
         counts[player.category as keyof typeof counts]++;
       });
       

@@ -53,7 +53,7 @@ const TeamForm = ({ onTeamAdded, initialPurse, userEmail }: TeamFormProps) => {
           name: name.trim(), 
           purse, 
           points: 0,
-          owner: userEmail
+          owner_id: userEmail
         }])
         .select();
         

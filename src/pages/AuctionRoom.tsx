@@ -3,6 +3,7 @@ import { useEffect, useState } from 'react';
 import { useRequireAuth } from '@/lib/auth';
 import { useToast } from '@/components/ui/use-toast';
 import { supabase } from '@/integrations/supabase/client';
+import { fetchTeams, fetchPublicAuctionData, modifyPlayerBid } from '@/services/teamService';
 import PlayerCard, { Player } from '@/components/PlayerCard';
 import TeamCard, { Team } from '@/components/TeamCard';
 import AuctionControls from '@/components/AuctionControls';
@@ -26,7 +27,7 @@ import {
   Users, 
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
-import { modifyPlayerBid } from '@/services/teamService';
+
 
 const AuctionRoom = () => {
   const { user, loading: authLoading } = useRequireAuth();
@@ -86,16 +87,13 @@ const AuctionRoom = () => {
   
   const fetchPlayers = async () => {
     try {
-      const { data, error } = await supabase
-        .from('players')
-        .select('*')
-        .order('priority', { ascending: true });
-        
+      const { players: fetchedPlayers, teams: fetchedTeams, error } = await fetchPublicAuctionData();
+      
       if (error) {
         throw error;
       }
       
-      const unsoldPlayers = (data || []).filter(player => !player.sold);
+      const unsoldPlayers = fetchedPlayers.filter(player => !player.sold);
       setPlayers(unsoldPlayers);
       
       if (unsoldPlayers.length > 0 && !currentPlayer) {
