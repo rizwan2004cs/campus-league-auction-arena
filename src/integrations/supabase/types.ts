@@ -23,7 +23,9 @@ export type Database = {
           name: string
           points: number
           priority: number
+          sold: boolean | null
           sold_price: number | null
+          sold_to: string | null
           team_id: string | null
           updated_at: string
         }
@@ -35,7 +37,9 @@ export type Database = {
           name: string
           points?: number
           priority?: number
+          sold?: boolean | null
           sold_price?: number | null
+          sold_to?: string | null
           team_id?: string | null
           updated_at?: string
         }
@@ -47,11 +51,20 @@ export type Database = {
           name?: string
           points?: number
           priority?: number
+          sold?: boolean | null
           sold_price?: number | null
+          sold_to?: string | null
           team_id?: string | null
           updated_at?: string
         }
         Relationships: [
+          {
+            foreignKeyName: "players_sold_to_fkey"
+            columns: ["sold_to"]
+            isOneToOne: false
+            referencedRelation: "teams"
+            referencedColumns: ["id"]
+          },
           {
             foreignKeyName: "players_team_id_fkey"
             columns: ["team_id"]
@@ -117,18 +130,21 @@ export type Database = {
       }
       team_players: {
         Row: {
+          bid_price: number | null
           created_at: string
           id: string
           player_id: string
           team_id: string
         }
         Insert: {
+          bid_price?: number | null
           created_at?: string
           id?: string
           player_id: string
           team_id: string
         }
         Update: {
+          bid_price?: number | null
           created_at?: string
           id?: string
           player_id?: string

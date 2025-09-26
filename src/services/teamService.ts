@@ -7,7 +7,7 @@ type DbPlayer = Database['public']['Tables']['players']['Row'];
 type DbTeam = Database['public']['Tables']['teams']['Row'];
 
 // Helper function to transform database player to component player
-const transformDbPlayerToPlayer = (dbPlayer: DbPlayer, teamName?: string): Player => {
+const transformDbPlayerToPlayer = (dbPlayer: DbPlayer, teamName?: string, bidPrice?: number): Player => {
   return {
     id: dbPlayer.id,
     name: dbPlayer.name,
@@ -15,9 +15,9 @@ const transformDbPlayerToPlayer = (dbPlayer: DbPlayer, teamName?: string): Playe
     points: dbPlayer.points,
     priority: dbPlayer.priority,
     base_price: dbPlayer.base_price,
-    sold: !!dbPlayer.team_id,
+    sold: dbPlayer.sold || !!dbPlayer.team_id,
     sold_to: teamName || undefined,
-    bid_price: dbPlayer.sold_price || undefined,
+    bid_price: bidPrice || dbPlayer.sold_price || undefined,
     image_url: undefined // Not in DB schema yet
   };
 };
@@ -85,9 +85,17 @@ export const updateAllTeamPurses = async (amount: number): Promise<{ success: bo
       .from('players')
       .update({ 
         team_id: null,
-        sold_price: null
+        sold_price: null,
+        sold: false,
+        sold_to: null
       })
       .not('team_id', 'is', null);
+
+    // Clear all team_players relationships
+    const { error: clearTeamPlayersError } = await supabase
+      .from('team_players')
+      .delete()
+      .gte('id', '00000000-0000-0000-0000-000000000000');
       
     if (resetPlayersError) {
       console.error('Error resetting players:', resetPlayersError);
@@ -148,8 +156,16 @@ export const deleteTeam = async (teamId: string): Promise<{ success: boolean; er
       .from('players')
       .update({ 
         team_id: null,
-        sold_price: null
+        sold_price: null,
+        sold: false,
+        sold_to: null
       })
+      .eq('team_id', teamId);
+
+    // Remove from team_players table
+    const { error: removeTeamPlayersError } = await supabase
+      .from('team_players')
+      .delete()
       .eq('team_id', teamId);
       
     if (resetPlayersError) {
@@ -278,9 +294,20 @@ export const modifyPlayerBid = async (
         .from('players')
         .update({
           team_id: updates.sold_to,
-          sold_price: updates.bid_price
+          sold_price: updates.bid_price,
+          sold: true,
+          sold_to: updates.sold_to
         })
         .eq('id', playerId);
+
+      // Add to team_players table
+      const { error: addTeamPlayerError } = await supabase
+        .from('team_players')
+        .upsert({
+          team_id: updates.sold_to,
+          player_id: playerId,
+          bid_price: updates.bid_price
+        });
         
       if (updatePlayerError) {
         throw updatePlayerError;
@@ -291,9 +318,17 @@ export const modifyPlayerBid = async (
         .from('players')
         .update({
           team_id: null,
-          sold_price: null
+          sold_price: null,
+          sold: false,
+          sold_to: null
         })
         .eq('id', playerId);
+
+      // Remove from team_players table
+      const { error: removeTeamPlayerError } = await supabase
+        .from('team_players')
+        .delete()
+        .eq('player_id', playerId);
         
       if (updatePlayerError) {
         throw updatePlayerError;
@@ -387,11 +422,26 @@ export const fetchPublicAuctionData = async (): Promise<{
       (teamsData || []).map(team => [team.id, team.name])
     );
     
+    // Fetch team_players relationships to get bid prices
+    const { data: teamPlayersData, error: teamPlayersError } = await supabase
+      .from('team_players')
+      .select('*');
+    
+    if (teamPlayersError) {
+      throw teamPlayersError;
+    }
+    
+    // Create bid price lookup
+    const bidPriceMap = new Map(
+      (teamPlayersData || []).map(tp => [tp.player_id, tp.bid_price])
+    );
+    
     // Transform players
     const players = (playersData || []).map(dbPlayer => 
       transformDbPlayerToPlayer(
         dbPlayer, 
-        dbPlayer.team_id ? teamNameMap.get(dbPlayer.team_id) : undefined
+        dbPlayer.team_id ? teamNameMap.get(dbPlayer.team_id) : undefined,
+        bidPriceMap.get(dbPlayer.id)
       )
     );
     
