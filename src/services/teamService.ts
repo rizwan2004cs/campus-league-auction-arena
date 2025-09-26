@@ -219,14 +219,19 @@ export const modifyPlayerBid = async (
   }
 ): Promise<{ success: boolean; error: Error | null }> => {
   try {
+    console.log('🔧 Starting modifyPlayerBid:', { playerId, updates });
+    
     // Get current player data
     const { data: playerData, error: fetchError } = await supabase
       .from('players')
       .select('*')
       .eq('id', playerId)
       .single();
+    
+    console.log('📊 Current player data:', playerData);
       
     if (fetchError) {
+      console.error('❌ Error fetching player:', fetchError);
       throw fetchError;
     }
     
@@ -258,18 +263,24 @@ export const modifyPlayerBid = async (
     
     // If selling to new team
     if (updates.sold && updates.sold_to && updates.bid_price) {
+      console.log('💰 Processing new bid for team:', updates.sold_to);
+      
       // Get current team data and calculate new values
       const { data: currentTeamData, error: getTeamError } = await supabase
         .from('teams')
         .select('purse, points')
         .eq('id', updates.sold_to)
         .single();
+      
+      console.log('🏆 Team data before bid:', currentTeamData);
         
       if (getTeamError) {
+        console.error('❌ Error fetching team:', getTeamError);
         throw getTeamError;
       }
       
       if (currentTeamData.purse < updates.bid_price) {
+        console.error('💸 Insufficient purse:', { purse: currentTeamData.purse, bid: updates.bid_price });
         return { 
           success: false, 
           error: new Error(`Team doesn't have enough purse (${currentTeamData.purse} Cr) for this bid (${updates.bid_price} Cr)`) 
@@ -277,19 +288,27 @@ export const modifyPlayerBid = async (
       }
       
       // Update team purse and points
+      console.log('🔄 Updating team purse and points...');
+      const newPurse = currentTeamData.purse - updates.bid_price;
+      const newPoints = currentTeamData.points + playerData.points;
+      
       const { error: updateTeamError } = await supabase
         .from('teams')
         .update({ 
-          purse: currentTeamData.purse - updates.bid_price,
-          points: currentTeamData.points + playerData.points
+          purse: newPurse,
+          points: newPoints
         })
         .eq('id', updates.sold_to);
         
       if (updateTeamError) {
+        console.error('❌ Error updating team:', updateTeamError);
         throw updateTeamError;
       }
       
+      console.log('✅ Team updated successfully:', { newPurse, newPoints });
+      
       // Update player
+      console.log('🔄 Updating player...');
       const { error: updatePlayerError } = await supabase
         .from('players')
         .update({
@@ -299,8 +318,16 @@ export const modifyPlayerBid = async (
           sold_to: updates.sold_to
         })
         .eq('id', playerId);
+        
+      if (updatePlayerError) {
+        console.error('❌ Error updating player:', updatePlayerError);
+        throw updatePlayerError;
+      }
+      
+      console.log('✅ Player updated successfully');
 
       // Add to team_players table
+      console.log('🔄 Adding to team_players...');
       const { error: addTeamPlayerError } = await supabase
         .from('team_players')
         .upsert({
@@ -308,6 +335,13 @@ export const modifyPlayerBid = async (
           player_id: playerId,
           bid_price: updates.bid_price
         });
+        
+      if (addTeamPlayerError) {
+        console.error('❌ Error adding to team_players:', addTeamPlayerError);
+        throw addTeamPlayerError;
+      }
+      
+      console.log('✅ Added to team_players successfully');
         
       if (updatePlayerError) {
         throw updatePlayerError;
@@ -335,9 +369,10 @@ export const modifyPlayerBid = async (
       }
     }
     
+    console.log('✨ modifyPlayerBid completed successfully');
     return { success: true, error: null };
   } catch (error: any) {
-    console.error('Error modifying player bid:', error);
+    console.error('💥 Error in modifyPlayerBid:', error);
     return { success: false, error };
   }
 };
