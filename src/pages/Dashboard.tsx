@@ -46,6 +46,7 @@ const Dashboard = () => {
   const [image, setImage] = useState<File | null>(null);
   const [imagePreview, setImagePreview] = useState<string | null>(null);
   const [submitting, setSubmitting] = useState(false);
+  const [restoring, setRestoring] = useState(false);
   
   // Fetch players
   const fetchPlayers = async () => {
@@ -234,9 +235,74 @@ const Dashboard = () => {
   
   return (
     <div className="container mx-auto px-4 py-8">
-      <div className="mb-8">
-        <h1 className="text-3xl font-bold">Player Management</h1>
-        <p className="text-muted-foreground">Add, edit, and manage players for the auction</p>
+      <div className="mb-8 flex items-start justify-between gap-4">
+        <div>
+          <h1 className="text-3xl font-bold">Player Management</h1>
+          <p className="text-muted-foreground">Add, edit, and manage players for the auction</p>
+        </div>
+        <Button variant="outline" onClick={async () => {
+          // Inline call to restore images
+          setRestoring(true);
+          try {
+            // List files in bucket
+            const { data: files, error: listErr } = await supabase.storage
+              .from('player-images')
+              .list('', { limit: 1000 });
+            if (listErr) throw listErr;
+
+            const sanitize = (s: string) => s.toLowerCase().replace(/[^a-z0-9]/g, '');
+
+            // Build map from sanitized filename (without ext) -> publicUrl
+            const fileMap = new Map<string, string>();
+            for (const f of files || []) {
+              const base = f.name.replace(/\.[^/.]+$/, '');
+              const key = sanitize(base);
+              const { data: urlData } = supabase.storage.from('player-images').getPublicUrl(f.name);
+              fileMap.set(key, urlData.publicUrl);
+            }
+
+            // Fetch fresh players so we include any without image_url
+            const { data: dbPlayers, error: playersErr } = await supabase
+              .from('players')
+              .select('id, name, image_url');
+            if (playersErr) throw playersErr;
+
+            let updated = 0;
+            // Try to match by sanitized name
+            const updates = (dbPlayers || [])
+              .filter(p => !p.image_url)
+              .map(async (p) => {
+                const key = sanitize(p.name);
+                let url = fileMap.get(key);
+                if (!url) {
+                  // fuzzy: find first filename that contains key
+                  const match = Array.from(fileMap.keys()).find(k => k.includes(key) || key.includes(k));
+                  if (match) url = fileMap.get(match)!;
+                }
+                if (url) {
+                  const { error: updErr } = await supabase
+                    .from('players')
+                    .update({ image_url: url })
+                    .eq('id', p.id);
+                  if (!updErr) updated++;
+                }
+              });
+
+            await Promise.allSettled(updates);
+            toast({ title: 'Image restore complete', description: `${updated} player images linked.` });
+            fetchPlayers();
+          } catch (e: any) {
+            toast({ title: 'Restore failed', description: e.message, variant: 'destructive' });
+          } finally {
+            setRestoring(false);
+          }
+        }} disabled={restoring}>
+          {restoring ? (
+            <span className="inline-flex items-center"><Loader2 className="mr-2 h-4 w-4 animate-spin" />Restoring...</span>
+          ) : (
+            'Restore Images'
+          )}
+        </Button>
       </div>
       
       <div className="grid md:grid-cols-3 gap-6 mb-8">
