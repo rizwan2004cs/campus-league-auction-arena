@@ -20,6 +20,7 @@ export type Database = {
           category: string
           created_at: string
           id: string
+          image_url: string | null
           name: string
           points: number
           priority: number
@@ -34,6 +35,7 @@ export type Database = {
           category: string
           created_at?: string
           id?: string
+          image_url?: string | null
           name: string
           points?: number
           priority?: number
@@ -48,6 +50,7 @@ export type Database = {
           category?: string
           created_at?: string
           id?: string
+          image_url?: string | null
           name?: string
           points?: number
           priority?: number

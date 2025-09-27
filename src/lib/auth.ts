@@ -27,6 +27,11 @@ export function useAuth() {
       
       setSession(data.session);
       setUser(data.session?.user ?? null);
+      if (data.session?.user) {
+        setTimeout(() => {
+          supabase.rpc('set_team_ownership_for_user', { user_id: data.session!.user.id });
+        }, 0);
+      }
       setLoading(false);
     };
     
@@ -37,6 +42,11 @@ export function useAuth() {
       (_event, session) => {
         setSession(session);
         setUser(session?.user ?? null);
+        if (session?.user) {
+          setTimeout(() => {
+            supabase.rpc('set_team_ownership_for_user', { user_id: session.user!.id });
+          }, 0);
+        }
         setLoading(false);
       }
     );
@@ -59,7 +69,11 @@ export function useAuth() {
         title: 'Login successful',
         description: 'Welcome back!',
       });
-      
+      if (data.user) {
+        setTimeout(() => {
+          supabase.rpc('set_team_ownership_for_user', { user_id: data.user!.id });
+        }, 0);
+      }
       return data;
     } catch (error: any) {
       toast({

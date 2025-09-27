@@ -18,7 +18,7 @@ const transformDbPlayerToPlayer = (dbPlayer: DbPlayer, teamName?: string, bidPri
     sold: dbPlayer.sold || !!dbPlayer.team_id,
     sold_to: teamName || undefined,
     bid_price: bidPrice || dbPlayer.sold_price || undefined,
-    image_url: undefined // Not in DB schema yet
+    image_url: (dbPlayer as any).image_url || undefined
   };
 };
 
