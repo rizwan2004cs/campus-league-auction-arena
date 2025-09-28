@@ -20,6 +20,7 @@ const Settings = () => {
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [resetting, setResetting] = useState(false);
   
   // Fetch settings
   const fetchSettings = async () => {
@@ -153,7 +154,22 @@ const Settings = () => {
       setSaving(false);
     }
   };
-  
+  const handleResetAuction = async () => {
+    const confirmed = window.confirm('This will release all players, clear team rosters, and reset all team purses to the initial value. Proceed?');
+    if (!confirmed) return;
+    try {
+      setResetting(true);
+      const { data, error } = await supabase.functions.invoke('reset-auction', { body: {} });
+      if (error) throw error;
+      toast({ title: 'Auction reset', description: 'All players released and team purses reset.' });
+    } catch (err: any) {
+      console.error('Error resetting auction:', err);
+      toast({ title: 'Reset failed', description: err.message, variant: 'destructive' });
+    } finally {
+      setResetting(false);
+      fetchSettings();
+    }
+  };
   if (authLoading || loading) {
     return (
       <div className="flex justify-center items-center min-h-screen">
@@ -235,6 +251,26 @@ const Settings = () => {
               )}
             </Button>
           </form>
+        </CardContent>
+      </Card>
+      
+      <Card className="mt-8 border-destructive/30">
+        <CardHeader>
+          <CardTitle>Danger Zone</CardTitle>
+          <CardDescription>Reset the entire auction: releases all players and restores team purses.</CardDescription>
+        </CardHeader>
+        <CardContent>
+          <Button variant="destructive" className="w-full" onClick={handleResetAuction} disabled={resetting}>
+            {resetting ? (
+              <>
+                <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                Resetting...
+              </>
+            ) : (
+              'Reset Auction'
+            )}
+          </Button>
+          <p className="mt-2 text-xs text-muted-foreground">This action cannot be undone.</p>
         </CardContent>
       </Card>
       

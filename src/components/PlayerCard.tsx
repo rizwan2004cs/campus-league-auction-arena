@@ -1,8 +1,9 @@
-
+import { useMemo, useState } from 'react'
 import { User2, Trash2 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardFooter } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
+import { supabase } from '@/integrations/supabase/client';
 
 export type Player = {
   id: string;
@@ -48,18 +49,28 @@ const PlayerCard = ({
     bid_price
   } = player;
   
+  const [imgError, setImgError] = useState(false);
+  const imageSrc = useMemo(() => {
+    if (!image_url) return null;
+    if (image_url.startsWith('http')) return image_url;
+    const { data } = supabase.storage.from('player-images').getPublicUrl(image_url);
+    return data.publicUrl || null;
+  }, [image_url]);
+  
   return (
     <Card className={`${isAuctionCard ? 'w-full' : 'w-full'} overflow-hidden transition-all duration-300 hover:shadow-lg ${sold ? 'opacity-70' : ''}`}>
       <div className="relative aspect-video w-full overflow-hidden bg-muted">
-        {image_url ? (
+        {imageSrc && !imgError ? (
           <img 
-            src={image_url} 
+            src={imageSrc} 
             alt={name} 
             className="h-full w-full object-cover transition-all hover:scale-105" 
+            onError={() => setImgError(true)}
+            loading="lazy"
           />
         ) : (
-          <div className="flex h-full items-center justify-center bg-gray-100">
-            <User2 className="h-16 w-16 text-gray-400" />
+          <div className="flex h-full items-center justify-center">
+            <User2 className="h-16 w-16 text-muted-foreground" />
           </div>
         )}
         <Badge className={`absolute top-2 right-2 ${CategoryColors[category]}`}>
