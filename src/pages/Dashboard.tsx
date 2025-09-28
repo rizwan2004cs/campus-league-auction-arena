@@ -20,7 +20,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { useToast } from '@/components/ui/use-toast';
 import { useRequireAuth } from '@/lib/auth';
 import { supabase } from '@/integrations/supabase/client';
-import { fetchPublicAuctionData } from '@/services/teamService';
+import { fetchPublicAuctionData, deletePlayer } from '@/services/teamService';
 import PlayerCard, { Player } from '@/components/PlayerCard';
 import { Badge } from '@/components/ui/badge';
 import { ImagePlus, Loader2, PlusCircle, User2, RotateCcw } from 'lucide-react';
@@ -190,14 +190,11 @@ const Dashboard = () => {
       // Find player to get image URL
       const player = players.find(p => p.id === id);
       
-      // Delete player from database
-      const { error } = await supabase
-        .from('players')
-        .delete()
-        .eq('id', id);
-        
-      if (error) {
-        throw error;
+      // Delete player and handle team purse restoration
+      const result = await deletePlayer(id);
+      
+      if (!result.success) {
+        throw result.error;
       }
       
       // Delete image if exists
@@ -212,10 +209,10 @@ const Dashboard = () => {
       
       toast({
         title: 'Player deleted',
-        description: 'Player has been deleted successfully',
+        description: 'Player deleted and team purse restored if applicable',
       });
       
-      // Refresh players
+      // Refresh players list
       fetchPlayers();
     } catch (error: any) {
       toast({

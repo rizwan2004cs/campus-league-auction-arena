@@ -210,6 +210,82 @@ export const updateTeam = async (
   }
 };
 
+export const deletePlayer = async (playerId: string): Promise<{ success: boolean; error: Error | null }> => {
+  try {
+    // Get current player data to check if they're sold to a team
+    const { data: playerData, error: fetchError } = await supabase
+      .from('players')
+      .select('*, team_players!inner(bid_price, team_id)')
+      .eq('id', playerId)
+      .maybeSingle();
+      
+    if (fetchError) {
+      console.error('❌ Error fetching player:', fetchError);
+      throw fetchError;
+    }
+
+    // If player is sold to a team, restore the team's purse
+    if (playerData && playerData.team_players && playerData.team_players.length > 0) {
+      const teamPlayerData = playerData.team_players[0];
+      const teamId = teamPlayerData.team_id;
+      const bidPrice = teamPlayerData.bid_price || 0;
+
+      // Get current team data
+      const { data: teamData, error: getTeamError } = await supabase
+        .from('teams')
+        .select('purse, points')
+        .eq('id', teamId)
+        .single();
+        
+      if (getTeamError) {
+        throw getTeamError;
+      }
+
+      // Calculate new purse (restore bid price) and points (subtract player points)
+      const newPurse = teamData.purse + bidPrice;
+      const newPoints = Math.max(0, teamData.points - (playerData.points || 0));
+
+      // Update team purse and points
+      const { error: updateTeamError } = await supabase
+        .from('teams')
+        .update({ 
+          purse: newPurse,
+          points: newPoints
+        })
+        .eq('id', teamId);
+        
+      if (updateTeamError) {
+        throw updateTeamError;
+      }
+
+      // Remove from team_players table
+      const { error: removeTeamPlayerError } = await supabase
+        .from('team_players')
+        .delete()
+        .eq('player_id', playerId);
+        
+      if (removeTeamPlayerError) {
+        throw removeTeamPlayerError;
+      }
+    }
+
+    // Delete the player
+    const { error: deletePlayerError } = await supabase
+      .from('players')
+      .delete()
+      .eq('id', playerId);
+      
+    if (deletePlayerError) {
+      throw deletePlayerError;
+    }
+    
+    return { success: true, error: null };
+  } catch (error: any) {
+    console.error('Error deleting player:', error);
+    return { success: false, error };
+  }
+};
+
 export const modifyPlayerBid = async (
   playerId: string,
   updates: { 
