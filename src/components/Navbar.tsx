@@ -24,12 +24,12 @@ const Navbar = () => {
   if (!user) return null;
   
   return (
-    <header className="gradient-header sticky top-0 left-0 right-0 z-50 shadow-md">
+    <header className="gradient-header sticky top-0 left-0 right-0 z-50">
       <div className="container mx-auto px-4 md:px-6">
         <div className="flex items-center justify-between h-16">
           <div className="flex items-center">
             <Link to="/dashboard" className="flex items-center space-x-2">
-              <span className="text-xl font-bold">Campus League</span>
+              <span className="text-xl font-bold text-white drop-shadow-lg">Campus League</span>
             </Link>
           </div>
           
@@ -39,8 +39,8 @@ const Navbar = () => {
               <Link
                 key={path}
                 to={path}
-                className={`text-white hover:text-opacity-80 transition-colors ${
-                  isActive(path) ? 'font-medium border-b-2 border-white' : ''
+                className={`text-white/90 hover:text-white transition-all ${
+                  isActive(path) ? 'font-semibold border-b-2 border-white/80' : ''
                 }`}
               >
                 {label}
@@ -49,7 +49,7 @@ const Navbar = () => {
             
             <Button 
               variant="ghost" 
-              className="text-white hover:bg-white/20" 
+              className="text-white hover:bg-white/20 backdrop-blur-sm" 
               onClick={() => logout()}
             >
               <LogOut className="h-5 w-5 mr-1" />

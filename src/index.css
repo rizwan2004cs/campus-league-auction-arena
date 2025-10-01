@@ -4,65 +4,65 @@
 
 @layer base {
   :root {
-    --background: 0 0% 100%;
-    --foreground: 222.2 84% 4.9%;
+    --background: 180 100% 97%;
+    --foreground: 180 40% 10%;
 
-    --card: 0 0% 100%;
-    --card-foreground: 222.2 84% 4.9%;
+    --card: 180 100% 99%;
+    --card-foreground: 180 40% 10%;
 
-    --popover: 0 0% 100%;
-    --popover-foreground: 222.2 84% 4.9%;
+    --popover: 180 100% 99%;
+    --popover-foreground: 180 40% 10%;
 
-    --primary: 252 87% 60%;
-    --primary-foreground: 210 40% 98%;
+    --primary: 177 70% 50%;
+    --primary-foreground: 0 0% 100%;
 
-    --secondary: 210 40% 96.1%;
-    --secondary-foreground: 222.2 47.4% 11.2%;
+    --secondary: 160 60% 45%;
+    --secondary-foreground: 0 0% 100%;
 
-    --muted: 210 40% 96.1%;
-    --muted-foreground: 215.4 16.3% 46.9%;
+    --muted: 180 20% 92%;
+    --muted-foreground: 180 10% 45%;
 
-    --accent: 252 87% 96%;
-    --accent-foreground: 252 87% 60%;
+    --accent: 177 80% 85%;
+    --accent-foreground: 180 40% 10%;
 
     --destructive: 0 84.2% 60.2%;
-    --destructive-foreground: 210 40% 98%;
+    --destructive-foreground: 0 0% 100%;
 
-    --border: 214.3 31.8% 91.4%;
-    --input: 214.3 31.8% 91.4%;
-    --ring: 252 87% 60%;
+    --border: 180 30% 85%;
+    --input: 180 30% 90%;
+    --ring: 177 70% 50%;
 
-    --radius: 0.5rem;
+    --radius: 0.75rem;
   }
 
   .dark {
-    --background: 222.2 84% 4.9%;
-    --foreground: 210 40% 98%;
+    --background: 180 30% 8%;
+    --foreground: 180 20% 95%;
 
-    --card: 222.2 84% 4.9%;
-    --card-foreground: 210 40% 98%;
+    --card: 180 30% 10%;
+    --card-foreground: 180 20% 95%;
 
-    --popover: 222.2 84% 4.9%;
-    --popover-foreground: 210 40% 98%;
+    --popover: 180 30% 10%;
+    --popover-foreground: 180 20% 95%;
 
-    --primary: 252 87% 60%;
-    --primary-foreground: 222.2 47.4% 11.2%;
+    --primary: 177 70% 50%;
+    --primary-foreground: 0 0% 100%;
 
-    --secondary: 217.2 32.6% 17.5%;
-    --secondary-foreground: 210 40% 98%;
+    --secondary: 160 50% 35%;
+    --secondary-foreground: 0 0% 100%;
 
-    --muted: 217.2 32.6% 17.5%;
-    --muted-foreground: 215 20.2% 65.1%;
+    --muted: 180 20% 20%;
+    --muted-foreground: 180 10% 60%;
 
-    --accent: 252 87% 20%;
-    --accent-foreground: 210 40% 98%;
+    --accent: 177 60% 25%;
+    --accent-foreground: 180 20% 95%;
 
-    --destructive: 0 62.8% 30.6%;
-    --destructive-foreground: 210 40% 98%;
+    --destructive: 0 62.8% 50%;
+    --destructive-foreground: 0 0% 100%;
 
-    --border: 217.2 32.6% 17.5%;
-    --input: 217.2 32.6% 17.5%;
-    --ring: 212.7 26.8% 83.9%;
+    --border: 180 20% 20%;
+    --input: 180 20% 18%;
+    --ring: 177 70% 50%;
   }
 }
 
@@ -78,53 +78,100 @@
 
 @layer components {
   .gradient-header {
-    @apply bg-gradient-azure text-white;
+    backdrop-filter: blur(20px) saturate(180%);
+    -webkit-backdrop-filter: blur(20px) saturate(180%);
+    background: linear-gradient(135deg, rgba(6, 182, 212, 0.95) 0%, rgba(16, 185, 129, 0.95) 100%);
+    border-bottom: 1px solid rgba(110, 231, 183, 0.3);
+    box-shadow: 0px 4px 20px 0 rgba(6, 182, 212, 0.2);
   }
   
   .card-with-shadow {
-    @apply bg-white rounded-lg shadow-md p-6 hover:shadow-lg transition-shadow duration-300;
+    backdrop-filter: blur(17px) saturate(160%);
+    -webkit-backdrop-filter: blur(17px) saturate(160%);
+    background: rgba(224, 255, 255, 0.7);
+    border-radius: 12px;
+    border: 1px solid rgba(110, 231, 183, 0.3);
+    padding: 1.5rem;
+    box-shadow: 0px 10px 30px 0 rgba(6, 182, 212, 0.15),
+                inset 0 0 100px rgba(255, 255, 255, 0.1),
+                inset 0px 0px 4px 2px rgba(255, 255, 255, 0.08);
+    transition: all 0.3s ease;
+  }
+  
+  .card-with-shadow:hover {
+    box-shadow: 0px 15px 40px 0 rgba(6, 182, 212, 0.25),
+                inset 0 0 100px rgba(255, 255, 255, 0.15),
+                inset 0px 0px 6px 3px rgba(255, 255, 255, 0.1);
   }
   
   .modern-card {
-    @apply bg-gradient-to-br from-white to-gray-50 backdrop-blur-sm border border-gray-100 rounded-xl shadow-lg hover:shadow-xl transition-all duration-300;
+    backdrop-filter: blur(17px) saturate(160%);
+    -webkit-backdrop-filter: blur(17px) saturate(160%);
+    background: rgba(224, 255, 255, 0.6);
+    border-radius: 16px;
+    border: 1px solid rgba(110, 231, 183, 0.25);
+    box-shadow: 0px 10px 30px 0 rgba(6, 182, 212, 0.12);
+    transition: all 0.3s ease;
   }
   
   .glass-card {
-    @apply bg-white/90 backdrop-blur-sm border border-gray-100/20 rounded-xl shadow-lg;
+    backdrop-filter: blur(17px) saturate(160%);
+    -webkit-backdrop-filter: blur(17px) saturate(160%);
+    background: rgba(224, 255, 255, 0.6);
+    border-radius: 12px;
+    border: 1px solid rgba(110, 231, 183, 0.25);
+    box-shadow: 0px 10px 30px 0 rgba(6, 182, 212, 0.12);
   }
   
   .gradient-border {
-    @apply relative before:absolute before:inset-0 before:p-[1px] before:bg-gradient-bright before:rounded-xl before:-z-10;
+    @apply relative before:absolute before:inset-0 before:p-[1px] before:rounded-xl before:-z-10;
+    background: linear-gradient(135deg, rgba(6, 182, 212, 0.1), rgba(16, 185, 129, 0.1));
   }
   
   .primary-button {
-    @apply bg-gradient-bright hover:opacity-90 text-white font-medium py-2 px-4 rounded-md transition duration-200;
+    background: linear-gradient(135deg, rgb(6, 182, 212) 0%, rgb(16, 185, 129) 100%);
+    @apply hover:opacity-90 text-white font-medium py-2 px-4 rounded-md transition duration-200 shadow-md;
   }
   
   .secondary-button {
-    @apply bg-gradient-soft hover:opacity-90 text-gray-800 font-medium py-2 px-4 rounded-md transition duration-200;
+    backdrop-filter: blur(10px);
+    background: rgba(6, 182, 212, 0.1);
+    border: 1px solid rgba(110, 231, 183, 0.3);
+    @apply hover:bg-primary/20 text-foreground font-medium py-2 px-4 rounded-md transition duration-200;
   }
   
   .danger-button {
-    @apply bg-red-500 hover:bg-red-600 text-white font-medium py-2 px-4 rounded-md transition duration-200;
+    @apply bg-red-500 hover:bg-red-600 text-white font-medium py-2 px-4 rounded-md transition duration-200 shadow-md;
   }
   
   .success-button {
-    @apply bg-green-500 hover:bg-green-600 text-white font-medium py-2 px-4 rounded-md transition duration-200;
+    background: linear-gradient(135deg, rgb(16, 185, 129) 0%, rgb(5, 150, 105) 100%);
+    @apply hover:opacity-90 text-white font-medium py-2 px-4 rounded-md transition duration-200 shadow-md;
   }
   
   .stats-card {
-    @apply bg-gradient-cool rounded-xl p-4 shadow-md hover:shadow-lg transition-all duration-300;
+    backdrop-filter: blur(17px) saturate(160%);
+    -webkit-backdrop-filter: blur(17px) saturate(160%);
+    background: rgba(224, 255, 255, 0.5);
+    border-radius: 16px;
+    border: 1px solid rgba(110, 231, 183, 0.2);
+    padding: 1rem;
+    box-shadow: 0px 8px 25px 0 rgba(6, 182, 212, 0.1);
+    transition: all 0.3s ease;
+  }
+  
+  .stats-card:hover {
+    box-shadow: 0px 12px 35px 0 rgba(6, 182, 212, 0.2);
   }
   
   /* Glassmorphism / Liquid Glass Effect */
   .glass-morphism {
     backdrop-filter: blur(17px) saturate(160%);
     -webkit-backdrop-filter: blur(17px) saturate(160%);
-    background: rgba(252, 87, 60, 0.1);
+    background: rgba(6, 182, 212, 0.08);
     border-radius: 12px;
-    border: 1px solid rgba(252, 87, 60, 0.15);
-    box-shadow: 0px 10px 30px 0 rgba(0, 0, 0, 0.15),
+    border: 1px solid rgba(110, 231, 183, 0.2);
+    box-shadow: 0px 10px 30px 0 rgba(6, 182, 212, 0.15),
                 inset 0 0 100px rgba(255, 255, 255, 0),
                 inset 0px 0px 4px 2px rgba(255, 255, 255, 0.05);
   }
@@ -132,10 +179,10 @@
   .glass-morphism-dark {
     backdrop-filter: blur(17px) saturate(160%);
     -webkit-backdrop-filter: blur(17px) saturate(160%);
-    background: rgba(252, 87, 60, 0.08);
+    background: rgba(6, 182, 212, 0.12);
     border-radius: 12px;
-    border: 1px solid rgba(252, 87, 60, 0.2);
-    box-shadow: 0px 10px 30px 0 rgba(0, 0, 0, 0.3),
+    border: 1px solid rgba(110, 231, 183, 0.25);
+    box-shadow: 0px 10px 30px 0 rgba(2, 44, 34, 0.25),
                 inset 0 0 100px rgba(255, 255, 255, 0),
                 inset 0px 0px 4px 2px rgba(255, 255, 255, 0.08);
   }
