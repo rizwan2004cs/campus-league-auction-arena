@@ -116,4 +116,35 @@
   .stats-card {
     @apply bg-gradient-cool rounded-xl p-4 shadow-md hover:shadow-lg transition-all duration-300;
   }
+  
+  /* Glassmorphism / Liquid Glass Effect */
+  .glass-morphism {
+    backdrop-filter: blur(17px) saturate(160%);
+    -webkit-backdrop-filter: blur(17px) saturate(160%);
+    background: rgba(252, 87, 60, 0.1);
+    border-radius: 12px;
+    border: 1px solid rgba(252, 87, 60, 0.15);
+    box-shadow: 0px 10px 30px 0 rgba(0, 0, 0, 0.15),
+                inset 0 0 100px rgba(255, 255, 255, 0),
+                inset 0px 0px 4px 2px rgba(255, 255, 255, 0.05);
+  }
+  
+  .glass-morphism-dark {
+    backdrop-filter: blur(17px) saturate(160%);
+    -webkit-backdrop-filter: blur(17px) saturate(160%);
+    background: rgba(252, 87, 60, 0.08);
+    border-radius: 12px;
+    border: 1px solid rgba(252, 87, 60, 0.2);
+    box-shadow: 0px 10px 30px 0 rgba(0, 0, 0, 0.3),
+                inset 0 0 100px rgba(255, 255, 255, 0),
+                inset 0px 0px 4px 2px rgba(255, 255, 255, 0.08);
+  }
+  
+  .glass-card {
+    @apply glass-morphism transition-all duration-300 hover:shadow-2xl;
+  }
+  
+  .dark .glass-card {
+    @apply glass-morphism-dark;
+  }
 }
