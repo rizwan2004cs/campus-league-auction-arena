@@ -1,4 +1,4 @@
-import { Shield, Users, Pencil, Trash2 } from 'lucide-react';
+import { Shield, Users, Pencil, Trash2, UserMinus } from 'lucide-react';
 import { Card, CardContent, CardFooter, CardHeader } from '@/components/ui/card';
 import { Progress } from '@/components/ui/progress';
 import { Player } from './PlayerCard';
@@ -8,7 +8,7 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { useState } from 'react';
 import { useToast } from '@/hooks/use-toast';
-import { deleteTeam, updateTeam } from '@/services/teamService';
+import { deleteTeam, updateTeam, modifyPlayerBid } from '@/services/teamService';
 
 export type Team = {
   id: string;
@@ -37,6 +37,30 @@ const TeamCard = ({
   const { toast } = useToast();
   
   const pursePercentage = (purse / initialPurse) * 100;
+  
+  const handleRelievePlayer = async (playerId: string) => {
+    if (window.confirm('Are you sure you want to release this player?')) {
+      const { success, error } = await modifyPlayerBid(playerId, {
+        sold: false,
+        sold_to: null,
+        bid_price: null
+      });
+      
+      if (success) {
+        toast({
+          title: 'Player released',
+          description: 'Player has been released from the team',
+        });
+        onTeamUpdated?.();
+      } else {
+        toast({
+          title: 'Error releasing player',
+          description: error?.message,
+          variant: 'destructive',
+        });
+      }
+    }
+  };
   
   const handleDelete = async () => {
     if (window.confirm('Are you sure you want to delete this team?')) {
@@ -152,16 +176,26 @@ const TeamCard = ({
             </h4>
             <div className="glass-card divide-y divide-gray-100">
               {players.map((player) => (
-                <div key={player.id} className="py-2 px-3 flex justify-between">
+                <div key={player.id} className="py-2 px-3 flex justify-between items-center">
                   <div>
                     <span className="font-medium">{player.name}</span>
                     <span className="ml-2 text-xs text-muted-foreground">
                       {player.category}
                     </span>
                   </div>
-                  <span className="text-green-600 font-medium">
-                    {player.bid_price} Cr
-                  </span>
+                  <div className="flex items-center gap-2">
+                    <span className="text-green-600 font-medium">
+                      {player.bid_price} Cr
+                    </span>
+                    <Button
+                      variant="ghost"
+                      size="icon"
+                      className="h-7 w-7 text-red-600 hover:bg-red-50"
+                      onClick={() => handleRelievePlayer(player.id)}
+                    >
+                      <UserMinus className="h-4 w-4" />
+                    </Button>
+                  </div>
                 </div>
               ))}
             </div>

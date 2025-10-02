@@ -216,6 +216,12 @@ const AuctionRoom = () => {
     try {
       setBidLoading(true);
       
+      // Validate player is not already sold
+      const playerToSell = players.find(p => p.id === playerId);
+      if (!playerToSell || playerToSell.sold) {
+        throw new Error('This player has already been sold!');
+      }
+      
       const { success, error } = await modifyPlayerBid(playerId, {
         sold: true,
         sold_to: teamId,
