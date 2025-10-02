@@ -160,7 +160,7 @@ const Settings = () => {
     try {
       setResetting(true);
       const { data, error } = await supabase.functions.invoke('reset-auction', {
-        method: 'POST'
+        body: {}
       });
       if (error) throw error;
       toast({ title: 'Auction reset', description: 'All players released and team purses reset.' });
@@ -168,7 +168,7 @@ const Settings = () => {
       window.location.reload();
     } catch (err: any) {
       console.error('Error resetting auction:', err);
-      toast({ title: 'Reset failed', description: err.message || 'Failed to send a request to the Edge Function', variant: 'destructive' });
+      toast({ title: 'Reset failed', description: err?.message || 'Failed to send a request to the Edge Function', variant: 'destructive' });
     } finally {
       setResetting(false);
     }
