@@ -102,8 +102,8 @@ const TeamCard = ({
   };
   
   return (
-    <div className="modern-card overflow-hidden">
-      <div className="bg-gradient-azure p-4">
+    <div className="glass-card overflow-hidden">
+      <div className="gradient-header p-4">
         <div className="flex items-center justify-between">
           <div className="flex items-center space-x-3">
             <Shield className="h-6 w-6 text-white" />

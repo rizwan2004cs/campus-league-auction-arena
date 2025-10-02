@@ -22,7 +22,6 @@ const LeaderboardPage = () => {
   useEffect(() => {
     const fetchData = async () => {
       try {
-        setLoading(true);
         const { teams, error } = await fetchPublicAuctionData();
         
         if (error) {
@@ -38,21 +37,21 @@ const LeaderboardPage = () => {
         });
         
         setTeams(sortedTeams);
+        setLoading(false);
       } catch (error: any) {
         toast({
           title: 'Error loading leaderboard',
           description: error.message,
           variant: 'destructive',
         });
-      } finally {
         setLoading(false);
       }
     };
     
     fetchData();
     
-    // Refresh data every 5 seconds for real-time updates
-    const interval = setInterval(fetchData, 5000);
+    // Refresh data every 10 seconds for real-time updates (without showing loading state)
+    const interval = setInterval(fetchData, 10000);
     
     return () => clearInterval(interval);
   }, [toast]);
@@ -148,14 +147,14 @@ const LeaderboardPage = () => {
       
       <div className="mt-8 grid md:grid-cols-3 gap-6">
         {teams.slice(0, 3).map((team, index) => (
-          <Card key={team.id} className={`${index === 0 ? "border-yellow-500" : ""}`}>
-            <CardHeader className={`${index === 0 ? "bg-yellow-50" : ""}`}>
+          <Card key={team.id} className={`${index === 0 ? "border-primary/30 shadow-lg" : ""}`}>
+            <CardHeader className={`${index === 0 ? "gradient-header text-white" : "bg-primary/5"}`}>
               <CardTitle className="flex items-center justify-between">
-                <span>{team.name}</span>
+                <span className={index === 0 ? "text-white" : ""}>{team.name}</span>
                 <Badge className={`${
-                  index === 0 ? "bg-yellow-100 text-yellow-800" : 
-                  index === 1 ? "bg-gray-100 text-gray-800" : 
-                  "bg-amber-100 text-amber-800"
+                  index === 0 ? "bg-yellow-400 text-yellow-900 border-yellow-500" : 
+                  index === 1 ? "bg-accent text-accent-foreground" : 
+                  "bg-secondary/20 text-secondary-foreground"
                 }`}>
                   {index === 0 ? "1st" : index === 1 ? "2nd" : "3rd"}
                 </Badge>
