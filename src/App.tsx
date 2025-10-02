@@ -27,7 +27,7 @@ const AppRoutes = () => {
   return (
     <>
       {user && <Navbar />}
-      <main>
+      <main className="min-h-screen">
         <Routes>
           <Route path="/" element={<Navigate to="/dashboard" replace />} />
           <Route path="/login" element={<Login />} />
