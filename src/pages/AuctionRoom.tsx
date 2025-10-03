@@ -485,6 +485,7 @@ const AuctionRoom = () => {
                         team={team}
                         initialPurse={50}
                         showPlayers={true}
+                        onTeamUpdated={fetchAllData}
                       />
                     </TabsContent>
                   ))
