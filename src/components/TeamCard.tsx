@@ -40,11 +40,14 @@ const TeamCard = ({
   
   const handleRelievePlayer = async (playerId: string) => {
     if (window.confirm('Are you sure you want to release this player?')) {
+      console.log('Relieving player:', playerId);
       const { success, error } = await modifyPlayerBid(playerId, {
         sold: false,
         sold_to: null,
         bid_price: null
       });
+      
+      console.log('Relieve result:', { success, error });
       
       if (success) {
         toast({
@@ -55,7 +58,7 @@ const TeamCard = ({
       } else {
         toast({
           title: 'Error releasing player',
-          description: error?.message,
+          description: error?.message || 'Unknown error occurred',
           variant: 'destructive',
         });
       }
@@ -64,7 +67,10 @@ const TeamCard = ({
   
   const handleDelete = async () => {
     if (window.confirm('Are you sure you want to delete this team?')) {
+      console.log('Deleting team:', team.id);
       const { success, error } = await deleteTeam(team.id);
+      
+      console.log('Delete result:', { success, error });
       
       if (success) {
         toast({
@@ -75,7 +81,7 @@ const TeamCard = ({
       } else {
         toast({
           title: 'Error deleting team',
-          description: error?.message,
+          description: error?.message || 'Unknown error occurred',
           variant: 'destructive',
         });
       }
