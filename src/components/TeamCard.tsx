@@ -194,10 +194,16 @@ const TeamCard = ({
                       {player.bid_price} Cr
                     </span>
                     <Button
+                      type="button"
                       variant="ghost"
                       size="icon"
                       className="h-7 w-7 text-red-600 hover:bg-red-50"
-                      onClick={() => handleRelievePlayer(player.id)}
+                      title="Release player"
+                      onClick={(e) => {
+                        e.preventDefault();
+                        e.stopPropagation();
+                        handleRelievePlayer(player.id);
+                      }}
                     >
                       <UserMinus className="h-4 w-4" />
                     </Button>
