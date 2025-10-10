@@ -10,10 +10,10 @@ import { Loader2, PlusCircle } from 'lucide-react';
 interface TeamFormProps {
   onTeamAdded: () => void;
   initialPurse: number;
-  userEmail: string | undefined;
+  userId: string | undefined;
 }
 
-const TeamForm = ({ onTeamAdded, initialPurse, userEmail }: TeamFormProps) => {
+const TeamForm = ({ onTeamAdded, initialPurse, userId }: TeamFormProps) => {
   const { toast } = useToast();
   const [name, setName] = useState('');
   const [purse, setPurse] = useState(initialPurse);
@@ -25,8 +25,8 @@ const TeamForm = ({ onTeamAdded, initialPurse, userEmail }: TeamFormProps) => {
     try {
       setSubmitting(true);
       
-      // Make sure we have a user email
-      if (!userEmail) {
+      // Make sure we have a user ID
+      if (!userId) {
         throw new Error('You must be logged in to add a team');
       }
       
@@ -45,7 +45,7 @@ const TeamForm = ({ onTeamAdded, initialPurse, userEmail }: TeamFormProps) => {
         throw new Error(`A team with the name "${name}" already exists`);
       }
       
-      // Add team to database with the owner field set to the user's email
+      // Add team to database with the owner field set to the user's UUID
       // Always set points to 0 for new teams
       const { data, error } = await supabase
         .from('teams')
@@ -53,7 +53,7 @@ const TeamForm = ({ onTeamAdded, initialPurse, userEmail }: TeamFormProps) => {
           name: name.trim(), 
           purse, 
           points: 0,
-          owner_id: userEmail
+          owner_id: userId
         }])
         .select();
         

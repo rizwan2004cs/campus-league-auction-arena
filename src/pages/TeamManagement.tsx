@@ -68,7 +68,7 @@ const TeamManagement = () => {
           <TeamForm 
             onTeamAdded={loadTeams} 
             initialPurse={initialPurse}
-            userEmail={user?.email}
+            userId={user?.id}
           />
           
           <PurseUpdater 
