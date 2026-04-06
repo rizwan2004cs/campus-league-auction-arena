@@ -61,7 +61,26 @@ export const fetchTeams = async (): Promise<{
     }
       
     const initialPurse = settingsData?.initial_purse || 50;
-    const teams = (teamsData || []).map(dbTeam => transformDbTeamToTeam(dbTeam));
+    
+    // Fetch players that belong to any team
+    const { data: playersData } = await supabase
+      .from('players')
+      .select('*')
+      .not('team_id', 'is', null);
+      
+    // Fetch team_players for bid prices
+    const { data: tpData } = await supabase
+      .from('team_players')
+      .select('*');
+      
+    const teams = (teamsData || []).map(dbTeam => {
+      const dbPlayersForTeam = (playersData || []).filter(p => p.team_id === dbTeam.id);
+      const fullyParsedPlayers = dbPlayersForTeam.map(dbP => {
+         const matchingTp = (tpData || []).find(tp => tp.player_id === dbP.id);
+         return transformDbPlayerToPlayer(dbP, dbTeam.name, matchingTp?.bid_price || dbP.sold_price || undefined);
+      });
+      return transformDbTeamToTeam(dbTeam, fullyParsedPlayers);
+    });
     
     return {
       teams,
@@ -404,9 +423,13 @@ export const modifyPlayerBid = async (
 
       // Add to team_players table
       console.log('🔄 Adding to team_players...');
+      
+      // Clean up any existing records for this player first to prevent duplicates
+      await supabase.from('team_players').delete().eq('player_id', playerId);
+      
       const { error: addTeamPlayerError } = await supabase
         .from('team_players')
-        .upsert({
+        .insert({
           team_id: updates.sold_to,
           player_id: playerId,
           bid_price: updates.bid_price
@@ -593,5 +616,37 @@ export const fetchPublicAuctionData = async (): Promise<{
       },
       error
     };
+  }
+};
+
+export const fetchRecentlySoldPlayer = async (): Promise<Player | null> => {
+  try {
+    const { data: tpData, error: tpError } = await supabase
+      .from('team_players')
+      .select('*')
+      .order('created_at', { ascending: false })
+      .limit(1)
+      .maybeSingle();
+
+    if (tpError || !tpData) return null;
+
+    const { data: playerData, error: pError } = await supabase
+      .from('players')
+      .select('*')
+      .eq('id', tpData.player_id)
+      .single();
+
+    if (pError || !playerData || !playerData.sold) return null;
+
+    const { data: teamData } = await supabase
+      .from('teams')
+      .select('name')
+      .eq('id', tpData.team_id)
+      .single();
+
+    return transformDbPlayerToPlayer(playerData, teamData?.name, tpData.bid_price || playerData.sold_price || undefined);
+  } catch (error) {
+    console.error('Error fetching recently sold player:', error);
+    return null;
   }
 };

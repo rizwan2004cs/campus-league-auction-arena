@@ -17,73 +17,65 @@ const TeamManagement = () => {
   const [loading, setLoading] = useState(true);
   const [initialPurse, setInitialPurse] = useState(50);
   
-  // Fetch teams
   const loadTeams = async () => {
     try {
       setLoading(true);
-      
       const { teams: fetchedTeams, initialPurse: fetchedPurse, error } = await fetchTeams();
-      
-      if (error) {
-        throw error;
-      }
-      
+      if (error) throw error;
       setTeams(fetchedTeams);
       setInitialPurse(fetchedPurse);
     } catch (error: any) {
-      toast({
-        title: 'Error fetching teams',
-        description: error.message,
-        variant: 'destructive',
-      });
+      toast({ title: 'Error fetching teams', description: error.message, variant: 'destructive' });
     } finally {
       setLoading(false);
     }
   };
   
-  useEffect(() => {
-    if (user) {
-      loadTeams();
-    }
-  }, [user]);
+  useEffect(() => { if (user) loadTeams(); }, [user]);
   
   if (authLoading) {
     return (
-      <div className="flex justify-center items-center min-h-screen">
+      <div className="flex justify-center items-center h-full">
         <Loader2 className="h-8 w-8 animate-spin text-primary" />
-        <span className="ml-2">Loading...</span>
+        <span className="ml-2 text-[#475569]">Loading…</span>
       </div>
     );
   }
   
   return (
-    <div className="container mx-auto px-4 py-8">
-      <div className="mb-8">
-        <h1 className="text-3xl font-bold">Team Management</h1>
-        <p className="text-muted-foreground">Add and manage teams for the auction</p>
-      </div>
-      
-      <div className="grid md:grid-cols-12 gap-8">
-        <div className="md:col-span-4 space-y-6">
-          <TeamForm 
-            onTeamAdded={loadTeams} 
-            initialPurse={initialPurse}
-            userId={user?.id}
-          />
-          
-          <PurseUpdater 
-            initialValue={initialPurse} 
-            onUpdate={loadTeams} 
-          />
+    <div className="h-full overflow-y-auto no-scrollbar">
+      <div className="max-w-7xl mx-auto px-4 md:px-8 py-6 space-y-6">
+        <div>
+          <h1 className="page-header text-3xl">Team Management</h1>
+          <p className="page-subtitle text-sm mt-1">Add and manage teams for the auction</p>
         </div>
         
-        <div className="md:col-span-8">
-          <TeamList 
-            teams={teams} 
-            loading={loading} 
-            initialPurse={initialPurse} 
-            onTeamUpdated={loadTeams}  // Pass the loadTeams function to TeamList
-          />
+        <div className="grid md:grid-cols-12 gap-6">
+          <div className="md:col-span-4 space-y-4">
+            <div className="glass-card p-6">
+              <TeamForm 
+                onTeamAdded={loadTeams} 
+                initialPurse={initialPurse}
+                userId={user?.id}
+              />
+            </div>
+            
+            <div className="glass-card p-6">
+              <PurseUpdater 
+                initialValue={initialPurse} 
+                onUpdate={loadTeams} 
+              />
+            </div>
+          </div>
+          
+          <div className="md:col-span-8">
+            <TeamList 
+              teams={teams} 
+              loading={loading} 
+              initialPurse={initialPurse} 
+              onTeamUpdated={loadTeams}
+            />
+          </div>
         </div>
       </div>
     </div>

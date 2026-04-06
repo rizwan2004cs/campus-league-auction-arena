@@ -1,7 +1,6 @@
 import { useMemo, useState } from 'react'
 import { User2, Trash2 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
-import { Card, CardContent, CardFooter } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { supabase } from '@/integrations/supabase/client';
 
@@ -25,10 +24,10 @@ interface PlayerCardProps {
   isAuctionCard?: boolean;
 }
 
-const CategoryColors = {
-  'Bowler': 'bg-green-100 text-green-800',
-  'Batter': 'bg-blue-100 text-blue-800',
-  'All-Rounder': 'bg-purple-100 text-purple-800',
+const CategoryStyles: Record<string, string> = {
+  'Bowler': 'cat-bowler',
+  'Batter': 'cat-batter',
+  'All-Rounder': 'cat-allrounder',
 };
 
 const PlayerCard = ({ 
@@ -37,17 +36,7 @@ const PlayerCard = ({
   showActions = true,
   isAuctionCard = false
 }: PlayerCardProps) => {
-  const {
-    id,
-    name,
-    category,
-    points,
-    priority,
-    base_price,
-    image_url,
-    sold,
-    bid_price
-  } = player;
+  const { id, name, category, points, priority, base_price, image_url, sold, bid_price } = player;
   
   const [imgError, setImgError] = useState(false);
   const imageSrc = useMemo(() => {
@@ -58,69 +47,70 @@ const PlayerCard = ({
   }, [image_url]);
   
   return (
-    <Card className={`${isAuctionCard ? 'w-full' : 'w-full'} overflow-hidden transition-all duration-300 hover:shadow-lg ${sold ? 'opacity-70' : ''}`}>
-      <div className="relative aspect-video w-full overflow-hidden bg-muted">
+    <div className={`glass-card overflow-hidden flex flex-col ${sold ? 'opacity-65' : ''}`}>
+      {/* Image */}
+      <div className="relative aspect-[4/3] w-full overflow-hidden bg-gradient-to-br from-[#bae6fd]/30 to-[#cee9ff]/30">
         {imageSrc && !imgError ? (
           <img 
             src={imageSrc} 
             alt={name} 
-            className="h-full w-full object-cover transition-all hover:scale-105" 
+            className="h-full w-full object-cover transition-transform duration-300 hover:scale-105" 
             onError={() => setImgError(true)}
             loading="lazy"
           />
         ) : (
           <div className="flex h-full items-center justify-center">
-            <User2 className="h-16 w-16 text-muted-foreground" />
+            <User2 className="h-14 w-14 text-[#93c5fd]" />
           </div>
         )}
-        <Badge className={`absolute top-2 right-2 ${CategoryColors[category]}`}>
+        <Badge className={`absolute top-2.5 right-2.5 ${CategoryStyles[category]} border-0 text-xs font-semibold rounded-lg px-2.5 py-1`}>
           {category}
         </Badge>
       </div>
       
-      <CardContent className="p-4">
-        <div className="space-y-2">
-          <h3 className="text-lg font-semibold truncate">{name}</h3>
+      {/* Content */}
+      <div className="p-4 flex-1 flex flex-col justify-between">
+        <div className="space-y-2.5">
+          <h3 className="font-display font-bold text-[#1e293b] truncate">{name}</h3>
           
-          <div className="grid grid-cols-2 gap-2 text-sm">
-            <div>
-              <span className="text-muted-foreground">Points:</span>
-              <span className="ml-1 font-medium">{points}</span>
+          <div className="grid grid-cols-3 gap-2">
+            <div className="text-center p-2 rounded-xl bg-white/40">
+              <p className="text-[10px] text-[#475569] font-medium">Points</p>
+              <p className="font-display font-bold text-sm text-[#1e293b]">{points}</p>
             </div>
-            
-            <div>
-              <span className="text-muted-foreground">Priority:</span>
-              <span className="ml-1 font-medium">{priority}</span>
+            <div className="text-center p-2 rounded-xl bg-white/40">
+              <p className="text-[10px] text-[#475569] font-medium">Priority</p>
+              <p className="font-display font-bold text-sm text-[#1e293b]">{priority}</p>
             </div>
-            
-            <div className="col-span-2">
-              <span className="text-muted-foreground">Base Price:</span>
-              <span className="ml-1 font-medium">{base_price} Cr</span>
+            <div className="text-center p-2 rounded-xl bg-white/40">
+              <p className="text-[10px] text-[#475569] font-medium">Base</p>
+              <p className="font-display font-bold text-sm text-[#1e293b]">{base_price}Cr</p>
             </div>
-            
-            {sold && bid_price && (
-              <div className="col-span-2">
-                <span className="text-muted-foreground">Sold Price:</span>
-                <span className="ml-1 font-medium text-green-600">{bid_price} Cr</span>
-              </div>
-            )}
           </div>
+          
+          {sold && bid_price && (
+            <div className="text-center p-2 rounded-xl bg-[#bae6fd]/30">
+              <p className="text-[10px] text-[#475569] font-medium">Sold Price</p>
+              <p className="font-display font-bold text-sm text-[#334155]">{bid_price} Cr</p>
+            </div>
+          )}
         </div>
-      </CardContent>
-      
-      {showActions && onDelete && (
-        <CardFooter className="p-4 pt-0 flex justify-end">
-          <Button 
-            variant="destructive" 
-            size="sm" 
-            onClick={() => onDelete(id)}
-          >
-            <Trash2 className="h-4 w-4 mr-1" />
-            Delete
-          </Button>
-        </CardFooter>
-      )}
-    </Card>
+        
+        {showActions && onDelete && (
+          <div className="mt-3 pt-3 border-t border-white/30">
+            <Button 
+              variant="ghost" 
+              size="sm"
+              className="w-full text-xs text-red-400 hover:text-red-600 hover:bg-red-50/50 rounded-xl font-medium"
+              onClick={() => onDelete(id)}
+            >
+              <Trash2 className="h-3.5 w-3.5 mr-1.5" />
+              Remove
+            </Button>
+          </div>
+        )}
+      </div>
+    </div>
   );
 };
 

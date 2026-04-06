@@ -13,6 +13,7 @@ import Settings from "@/pages/Settings";
 import NotFound from "@/pages/NotFound";
 import PublicAuctionView from "@/pages/PublicAuctionView";
 import LeaderboardPage from "@/pages/LeaderboardPage";
+import AuctionSummary from "@/pages/AuctionSummary";
 import { useAuth } from "@/lib/auth";
 
 const queryClient = new QueryClient();
@@ -25,15 +26,16 @@ const AppRoutes = () => {
   }
   
   return (
-    <>
+    <div className="flex flex-col h-screen w-screen overflow-hidden">
       {user && <Navbar />}
-      <main className="min-h-screen">
+      <main className="flex-1 overflow-y-auto no-scrollbar">
         <Routes>
           <Route path="/" element={<Navigate to="/dashboard" replace />} />
           <Route path="/login" element={<Login />} />
           <Route path="/dashboard" element={<Dashboard />} />
           <Route path="/teams" element={<TeamManagement />} />
           <Route path="/auction" element={<AuctionRoom />} />
+          <Route path="/summary" element={<AuctionSummary />} />
           <Route path="/settings" element={<Settings />} />
           
           {/* Public routes that don't require authentication */}
@@ -43,7 +45,7 @@ const AppRoutes = () => {
           <Route path="*" element={<NotFound />} />
         </Routes>
       </main>
-    </>
+    </div>
   );
 };
 

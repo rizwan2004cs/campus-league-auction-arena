@@ -2,213 +2,225 @@
 @tailwind components;
 @tailwind utilities;
 
+/* ═══════════════════════════════════════════════
+   PASTEL RAINBOW THEME
+   ═══════════════════════════════════════════════ */
+
 @layer base {
   :root {
-    --background: 180 100% 97%;
-    --foreground: 180 40% 10%;
+    /* Background: Soft pastel white/blueish tint */
+    --background: 210 100% 98%;
+    /* Foreground: Navy Blue for readability */
+    --foreground: 215 32% 17%;
 
-    --card: 180 100% 99%;
-    --card-foreground: 180 40% 10%;
+    --card: 0 0% 100%;
+    --card-foreground: 215 32% 17%;
 
-    --popover: 180 100% 99%;
-    --popover-foreground: 180 40% 10%;
+    --popover: 0 0% 100%;
+    --popover-foreground: 215 32% 17%;
 
-    --primary: 177 70% 50%;
+    /* Primary: Pastel Red / Coral */
+    --primary: 0 100% 70%;
     --primary-foreground: 0 0% 100%;
 
-    --secondary: 160 60% 45%;
-    --secondary-foreground: 0 0% 100%;
+    /* Secondary: Soft Pastel Blue */
+    --secondary: 204 70% 81%;
+    --secondary-foreground: 215 32% 17%;
 
-    --muted: 180 20% 92%;
-    --muted-foreground: 180 10% 45%;
+    /* Muted: Soft grey-blue */
+    --muted: 214 32% 91%;
+    --muted-foreground: 215 25% 45%;
 
-    --accent: 177 80% 85%;
-    --accent-foreground: 180 40% 10%;
+    --accent: 280 60% 85%; /* Pastel purple */
+    --accent-foreground: 215 32% 17%;
 
-    --destructive: 0 84.2% 60.2%;
+    --destructive: 0 84% 60%;
     --destructive-foreground: 0 0% 100%;
 
-    --border: 180 30% 85%;
-    --input: 180 30% 90%;
-    --ring: 177 70% 50%;
+    /* Borders & Rings: Light pastel blue */
+    --border: 214 32% 85%;
+    --input: 214 32% 85%;
+    --ring: 215 32% 17%;
 
-    --radius: 0.75rem;
-  }
-
-  .dark {
-    --background: 180 30% 8%;
-    --foreground: 180 20% 95%;
-
-    --card: 180 30% 10%;
-    --card-foreground: 180 20% 95%;
-
-    --popover: 180 30% 10%;
-    --popover-foreground: 180 20% 95%;
-
-    --primary: 177 70% 50%;
-    --primary-foreground: 0 0% 100%;
-
-    --secondary: 160 50% 35%;
-    --secondary-foreground: 0 0% 100%;
-
-    --muted: 180 20% 20%;
-    --muted-foreground: 180 10% 60%;
-
-    --accent: 177 60% 25%;
-    --accent-foreground: 180 20% 95%;
-
-    --destructive: 0 62.8% 50%;
-    --destructive-foreground: 0 0% 100%;
-
-    --border: 180 20% 20%;
-    --input: 180 20% 18%;
-    --ring: 177 70% 50%;
+    --radius: 1rem;
   }
 }
 
 @layer base {
   * {
     @apply border-border;
+    /* NUCLEAR scrollbar kill — every single element */
+    scrollbar-width: none !important;
+    -ms-overflow-style: none !important;
+  }
+
+  *::-webkit-scrollbar {
+    display: none !important;
+    width: 0 !important;
+    height: 0 !important;
+  }
+
+  body, html {
+    margin: 0;
+    padding: 0;
+    height: 100%;
+    overflow: hidden;
   }
 
   body {
     @apply text-foreground;
-    background: linear-gradient(135deg, 
-      hsl(180, 100%, 97%) 0%, 
-      hsl(177, 90%, 92%) 25%, 
-      hsl(180, 85%, 95%) 50%,
-      hsl(175, 80%, 93%) 75%,
-      hsl(180, 95%, 96%) 100%);
-    min-height: 100vh;
+    font-family: 'Plus Jakarta Sans', -apple-system, BlinkMacSystemFont, sans-serif;
+    -webkit-font-smoothing: antialiased;
+    -moz-osx-font-smoothing: grayscale;
+
+    /* Coral Sunrise mesh — matching the vibrant fluid pink & yellow reference */
+    background: #fff5f8;
+    background-image:
+      radial-gradient(ellipse at 0% 0%,   rgba(253, 244, 151, 0.75) 0%, transparent 55%),
+      radial-gradient(ellipse at 100% 0%,  rgba(254, 207, 239, 0.85) 0%, transparent 50%),
+      radial-gradient(ellipse at 85% 90%,  rgba(255, 236, 179, 0.70) 0%, transparent 60%),
+      radial-gradient(ellipse at 15% 95%,  rgba(255, 154, 158, 0.85) 0%, transparent 65%),
+      radial-gradient(ellipse at 50% 45%,  rgba(251, 194, 235, 0.65) 0%, transparent 60%);
     background-attachment: fixed;
+    height: 100vh;
+    width: 100vw;
   }
-  
-  .dark body {
-    background: linear-gradient(135deg, 
-      hsl(180, 30%, 8%) 0%, 
-      hsl(177, 35%, 12%) 25%, 
-      hsl(180, 32%, 10%) 50%,
-      hsl(175, 33%, 11%) 75%,
-      hsl(180, 30%, 9%) 100%);
+
+  h1, h2, h3, h4, h5, h6 {
+    font-family: 'Bricolage Grotesque', sans-serif;
+    letter-spacing: -0.01em;
+  }
+}
+
+@layer utilities {
+  .no-scrollbar::-webkit-scrollbar { display: none !important; }
+  .no-scrollbar {
+    -ms-overflow-style: none !important;
+    scrollbar-width: none !important;
+  }
+
+  .font-display {
+    font-family: 'Bricolage Grotesque', sans-serif;
   }
 }
 
 @layer components {
+
+  /* ─── Glass Nav / Card ─── */
+  .glass-nav {
+    background: rgba(255, 255, 255, 0.65);
+    backdrop-filter: blur(20px) saturate(160%);
+    -webkit-backdrop-filter: blur(20px) saturate(160%);
+    border: 1px solid rgba(255, 255, 255, 0.5);
+    box-shadow: 0 4px 24px rgba(44, 62, 80, 0.05), inset 0 1px 0 rgba(255, 255, 255, 0.7);
+  }
+
+  .glass-card {
+    background: rgba(255, 255, 255, 0.75);
+    backdrop-filter: blur(16px) saturate(180%);
+    -webkit-backdrop-filter: blur(16px) saturate(180%);
+    border-radius: 20px;
+    border: 1px solid rgba(255, 255, 255, 0.6);
+    box-shadow: 0 8px 32px rgba(44, 62, 80, 0.04), inset 0 1px 0 rgba(255, 255, 255, 0.8);
+    transition: transform 0.25s ease, box-shadow 0.25s ease, background 0.25s ease;
+  }
+
+  .glass-card:hover {
+    background: rgba(255, 255, 255, 0.85);
+    box-shadow: 0 14px 44px rgba(44, 62, 80, 0.08), inset 0 1px 0 rgba(255, 255, 255, 0.9);
+    transform: translateY(-3px);
+  }
+
+  .glass-dialog, .glass-login {
+    background: rgba(255, 255, 255, 0.80);
+    backdrop-filter: blur(24px) saturate(170%);
+    -webkit-backdrop-filter: blur(24px) saturate(170%);
+    border-radius: 20px;
+    border: 1px solid rgba(255, 255, 255, 0.60);
+    box-shadow: 0 16px 48px rgba(44, 62, 80, 0.08), inset 0 1px 0 rgba(255, 255, 255, 0.8);
+  }
+
+  /* ─── Glass Input Fields ─── */
+  .glass-input {
+    background: rgba(255, 255, 255, 0.80) !important;
+    border: 1px solid rgba(174, 198, 207, 0.45) !important; /* Pastel Blue border */
+    backdrop-filter: blur(8px);
+    -webkit-backdrop-filter: blur(8px);
+    transition: border-color 0.2s ease, box-shadow 0.2s ease;
+  }
+
+  .glass-input:focus {
+    border-color: rgba(174, 198, 207, 0.8) !important;
+    box-shadow: 0 0 0 3px rgba(174, 198, 207, 0.30) !important;
+    outline: none;
+  }
+
+  /* ─── Gradient Header (card headers) ─── */
   .gradient-header {
-    backdrop-filter: blur(20px) saturate(180%);
-    -webkit-backdrop-filter: blur(20px) saturate(180%);
-    background: linear-gradient(135deg, rgba(6, 182, 212, 0.95) 0%, rgba(16, 185, 129, 0.95) 100%);
-    border-bottom: 1px solid rgba(110, 231, 183, 0.3);
-    box-shadow: 0px 4px 20px 0 rgba(6, 182, 212, 0.2);
+    background: linear-gradient(135deg,
+      rgba(255, 243, 176, 0.9) 0%,    /* Pastel Yellow */
+      rgba(255, 209, 220, 0.9) 50%,   /* Pastel Pink */
+      rgba(174, 198, 207, 0.9) 100%); /* Pastel Blue */
+    border-bottom: 1px solid rgba(255, 255, 255, 0.5);
   }
-  
-  .card-with-shadow {
-    backdrop-filter: blur(17px) saturate(160%);
-    -webkit-backdrop-filter: blur(17px) saturate(160%);
-    background: rgba(224, 255, 255, 0.7);
-    border-radius: 12px;
-    border: 1px solid rgba(110, 231, 183, 0.3);
-    padding: 1.5rem;
-    box-shadow: 0px 10px 30px 0 rgba(6, 182, 212, 0.15),
-                inset 0 0 100px rgba(255, 255, 255, 0.1),
-                inset 0px 0px 4px 2px rgba(255, 255, 255, 0.08);
-    transition: all 0.3s ease;
-  }
-  
-  .card-with-shadow:hover {
-    box-shadow: 0px 15px 40px 0 rgba(6, 182, 212, 0.25),
-                inset 0 0 100px rgba(255, 255, 255, 0.15),
-                inset 0px 0px 6px 3px rgba(255, 255, 255, 0.1);
-  }
-  
-  .modern-card {
-    backdrop-filter: blur(17px) saturate(160%);
-    -webkit-backdrop-filter: blur(17px) saturate(160%);
-    background: rgba(224, 255, 255, 0.6);
-    border-radius: 16px;
-    border: 1px solid rgba(110, 231, 183, 0.25);
-    box-shadow: 0px 10px 30px 0 rgba(6, 182, 212, 0.12);
-    transition: all 0.3s ease;
-  }
-  
-  .glass-card {
-    backdrop-filter: blur(17px) saturate(160%);
-    -webkit-backdrop-filter: blur(17px) saturate(160%);
-    background: rgba(224, 255, 255, 0.6);
-    border-radius: 12px;
-    border: 1px solid rgba(110, 231, 183, 0.25);
-    box-shadow: 0px 10px 30px 0 rgba(6, 182, 212, 0.12);
-  }
-  
-  .gradient-border {
-    @apply relative before:absolute before:inset-0 before:p-[1px] before:rounded-xl before:-z-10;
-    background: linear-gradient(135deg, rgba(6, 182, 212, 0.1), rgba(16, 185, 129, 0.1));
-  }
-  
+
+  /* ─── Primary Button ─── */
   .primary-button {
-    background: linear-gradient(135deg, rgb(6, 182, 212) 0%, rgb(16, 185, 129) 100%);
-    @apply hover:opacity-90 text-white font-medium py-2 px-4 rounded-md transition duration-200 shadow-md;
+    /* Rich pastel gradient red/orange */
+    background: linear-gradient(135deg, #FF8A8A 0%, #FFB347 100%);
+    color: white;
+    font-weight: 700;
+    @apply py-2.5 px-6 rounded-2xl transition-all duration-300 shadow-lg hover:shadow-xl hover:-translate-y-0.5 border-0;
   }
-  
+
+  .primary-button:hover {
+    filter: brightness(1.05);
+  }
+
+  /* ─── Secondary Button ─── */
   .secondary-button {
-    backdrop-filter: blur(10px);
-    background: rgba(6, 182, 212, 0.1);
-    border: 1px solid rgba(110, 231, 183, 0.3);
-    @apply hover:bg-primary/20 text-foreground font-medium py-2 px-4 rounded-md transition duration-200;
+    background: rgba(255, 255, 255, 0.70);
+    backdrop-filter: blur(8px);
+    border: 1px solid rgba(44, 62, 80, 0.15); /* Soft Navy border */
+    color: #2C3E50; /* Navy Blue Text */
+    @apply font-semibold py-2.5 px-6 rounded-2xl transition-all duration-300 shadow-sm hover:bg-white/90;
   }
-  
-  .danger-button {
-    @apply bg-red-500 hover:bg-red-600 text-white font-medium py-2 px-4 rounded-md transition duration-200 shadow-md;
-  }
-  
-  .success-button {
-    background: linear-gradient(135deg, rgb(16, 185, 129) 0%, rgb(5, 150, 105) 100%);
-    @apply hover:opacity-90 text-white font-medium py-2 px-4 rounded-md transition duration-200 shadow-md;
-  }
-  
-  .stats-card {
-    backdrop-filter: blur(17px) saturate(160%);
-    -webkit-backdrop-filter: blur(17px) saturate(160%);
-    background: rgba(224, 255, 255, 0.5);
+
+  /* ─── Stat Chip ─── */
+  .stat-chip {
+    background: rgba(255, 255, 255, 0.80);
+    backdrop-filter: blur(12px);
+    -webkit-backdrop-filter: blur(12px);
+    border: 1px solid rgba(255, 255, 255, 0.5);
     border-radius: 16px;
-    border: 1px solid rgba(110, 231, 183, 0.2);
-    padding: 1rem;
-    box-shadow: 0px 8px 25px 0 rgba(6, 182, 212, 0.1);
-    transition: all 0.3s ease;
+    padding: 0.75rem 1rem;
+    box-shadow: 0 4px 16px rgba(44, 62, 80, 0.05);
+    transition: transform 0.2s ease, box-shadow 0.2s ease;
   }
-  
-  .stats-card:hover {
-    box-shadow: 0px 12px 35px 0 rgba(6, 182, 212, 0.2);
+
+  .stat-chip:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 8px 28px rgba(44, 62, 80, 0.08);
   }
-  
-  /* Glassmorphism / Liquid Glass Effect */
-  .glass-morphism {
-    backdrop-filter: blur(17px) saturate(160%);
-    -webkit-backdrop-filter: blur(17px) saturate(160%);
-    background: rgba(6, 182, 212, 0.08);
-    border-radius: 12px;
-    border: 1px solid rgba(110, 231, 183, 0.2);
-    box-shadow: 0px 10px 30px 0 rgba(6, 182, 212, 0.15),
-                inset 0 0 100px rgba(255, 255, 255, 0),
-                inset 0px 0px 4px 2px rgba(255, 255, 255, 0.05);
+
+  /* ─── Page Headers ─── */
+  .page-header {
+    font-family: 'Bricolage Grotesque', sans-serif;
+    font-weight: 800;
+    color: #1E293B; /* Navy Blue */
+    letter-spacing: -0.02em;
   }
-  
-  .glass-morphism-dark {
-    backdrop-filter: blur(17px) saturate(160%);
-    -webkit-backdrop-filter: blur(17px) saturate(160%);
-    background: rgba(6, 182, 212, 0.12);
-    border-radius: 12px;
-    border: 1px solid rgba(110, 231, 183, 0.25);
-    box-shadow: 0px 10px 30px 0 rgba(2, 44, 34, 0.25),
-                inset 0 0 100px rgba(255, 255, 255, 0),
-                inset 0px 0px 4px 2px rgba(255, 255, 255, 0.08);
+
+  .page-subtitle {
+    color: #475569; /* Slate Blue */
+    font-weight: 500;
   }
-  
-  .glass-card {
-    @apply glass-morphism transition-all duration-300 hover:shadow-2xl;
-  }
-  
-  .dark .glass-card {
-    @apply glass-morphism-dark;
-  }
+
+  /* ─── Category chips (New Vibrant Categories) ─── */
+  /* Bowler gets Pastel Blue */
+  .cat-bowler     { background: rgba(174, 198, 207, 0.8); color: #1E293B; border: 1px solid rgba(174, 198, 207, 1); }
+  /* Batter gets Pastel Red */
+  .cat-batter     { background: rgba(255, 138, 138, 0.8); color: white; border: 1px solid rgba(255, 138, 138, 1); }
+  /* All-rounder gets Pastel Purple */
+  .cat-allrounder { background: rgba(195, 177, 225, 0.8); color: #1E293B; border: 1px solid rgba(195, 177, 225, 1); }
 }

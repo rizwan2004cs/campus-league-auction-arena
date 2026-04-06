@@ -1,19 +1,17 @@
-
 import { useState } from 'react';
 import { useNavigate, useLocation } from 'react-router-dom';
-import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { useAuth } from '@/lib/auth';
 import { toast } from '@/components/ui/use-toast';
+import { Loader2, Users } from 'lucide-react';
 
 const Login = () => {
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [loading, setLoading] = useState(false);
-  const [isSignUp, setIsSignUp] = useState(false);
-  const { login, signup } = useAuth();
+  const { login } = useAuth();
   const navigate = useNavigate();
   const location = useLocation();
   
@@ -33,15 +31,8 @@ const Login = () => {
     
     try {
       setLoading(true);
-      if (isSignUp) {
-        await signup(email, password);
-        setIsSignUp(false);
-        setEmail('');
-        setPassword('');
-      } else {
-        await login(email, password);
-        navigate(from, { replace: true });
-      }
+      await login(email, password);
+      navigate(from, { replace: true });
     } catch (error) {
       console.error('Auth error:', error);
     } finally {
@@ -50,64 +41,89 @@ const Login = () => {
   };
   
   return (
-    <div className="min-h-screen flex items-center justify-center bg-gray-50 px-4">
-      <div className="w-full max-w-md">
-        <div className="text-center mb-8">
-          <h1 className="text-3xl font-bold gradient-header bg-clip-text text-transparent">
-            Campus Premier League
-          </h1>
-          <p className="text-gray-600 mt-2">Auction Arena</p>
-        </div>
+    <div className="h-full flex items-center justify-center p-8">
+      <div className="w-full max-w-6xl flex items-center justify-between gap-16 lg:gap-24">
         
-        <Card>
-          <CardHeader>
-            <CardTitle>{isSignUp ? 'Create Account' : 'Organizer Login'}</CardTitle>
-            <CardDescription>
-              {isSignUp 
-                ? 'Create a new account to start organizing auctions'
-                : 'Enter your credentials to access the auction dashboard'
-              }
-            </CardDescription>
-          </CardHeader>
-          <form onSubmit={handleSubmit}>
-            <CardContent className="space-y-4">
-              <div className="space-y-2">
-                <Label htmlFor="email">Email</Label>
+        {/* Left: Login Form */}
+        <div className="w-full max-w-md flex-shrink-0">
+          <div className="glass-login p-10">
+            <div className="space-y-2 mb-8">
+              <h2 className="text-3xl font-display font-bold text-[#1e293b]">Welcome back</h2>
+              <p className="text-base text-[#475569]">
+                Enter your credentials to continue
+              </p>
+            </div>
+            
+            <form onSubmit={handleSubmit} className="space-y-6">
+              <div className="space-y-3">
+                <Label htmlFor="email" className="text-[#1e293b] font-semibold text-base">Email</Label>
                 <Input
                   id="email"
                   type="email"
                   placeholder="your@email.com"
                   value={email}
                   onChange={(e) => setEmail(e.target.value)}
+                  className="glass-input rounded-xl h-12 text-base px-4"
                   required
                 />
               </div>
-              <div className="space-y-2">
-                <Label htmlFor="password">Password</Label>
+              <div className="space-y-3">
+                <Label htmlFor="password" className="text-[#1e293b] font-semibold text-base">Password</Label>
                 <Input
                   id="password"
                   type="password"
                   placeholder="••••••••"
                   value={password}
                   onChange={(e) => setPassword(e.target.value)}
+                  className="glass-input rounded-xl h-12 text-base px-4"
                   required
                 />
               </div>
-            </CardContent>
-            <CardFooter className="flex flex-col space-y-2">
-              <Button 
-                type="submit" 
-                className="w-full gradient-header" 
-                disabled={loading}
-              >
-                {loading 
-                  ? (isSignUp ? 'Creating Account...' : 'Logging in...') 
-                  : (isSignUp ? 'Create Account' : 'Login')
-                }
-              </Button>
-            </CardFooter>
-          </form>
-        </Card>
+              
+              <div className="pt-2 flex flex-col gap-3">
+                <Button 
+                  type="submit" 
+                  className="w-full primary-button h-14 text-lg" 
+                  disabled={loading}
+                >
+                  {loading ? (
+                    <>
+                      <Loader2 className="mr-2 h-5 w-5 animate-spin" />
+                      Signing in…
+                    </>
+                  ) : 'Sign In as Admin'}
+                </Button>
+                
+                <div className="relative flex items-center py-2">
+                  <div className="flex-grow border-t border-[#475569]/20"></div>
+                  <span className="flex-shrink-0 mx-4 text-[#475569] text-xs font-semibold uppercase tracking-wider">Or</span>
+                  <div className="flex-grow border-t border-[#475569]/20"></div>
+                </div>
+
+                <Button 
+                  type="button" 
+                  variant="outline"
+                  className="w-full h-14 text-base font-semibold border-2 border-[#93c5fd]/30 text-[#334155] hover:bg-[#bae6fd]/30 rounded-xl" 
+                  onClick={() => navigate('/public')}
+                >
+                  <Users className="mr-2 h-5 w-5" />
+                  Continue as Participant
+                </Button>
+              </div>
+            </form>
+          </div>
+        </div>
+
+        {/* Right: Large CPL Logo (SVG file) — hidden on small screens */}
+        <div className="hidden md:flex flex-1 items-center justify-center">
+          <img 
+            src="/icons/Campus Premier League.svg" 
+            alt="Campus Premier League" 
+            className="w-full max-w-2xl drop-shadow-2xl hover:scale-105 transition-transform duration-500"
+            style={{ filter: 'drop-shadow(0 12px 40px rgba(220,140,160,0.3))' }}
+          />
+        </div>
+
       </div>
     </div>
   );

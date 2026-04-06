@@ -49,49 +49,45 @@ const PurseUpdater = ({ initialValue, onUpdate }: PurseUpdaterProps) => {
   };
   
   return (
-    <Card>
-      <CardHeader>
-        <CardTitle className="flex items-center">
-          <RefreshCw className="h-5 w-5 mr-2" />
-          Update All Purses
-        </CardTitle>
-      </CardHeader>
-      <CardContent>
-        <div className="space-y-4">
-          <div className="space-y-2">
-            <Label htmlFor="globalPurse">New Purse Value (Cr)</Label>
-            <Input 
-              id="globalPurse" 
-              type="number" 
-              min={0} 
-              step={0.5} 
-              value={globalPurse}
-              onChange={(e) => setGlobalPurse(parseFloat(e.target.value))}
-              required 
-            />
-            <p className="text-xs text-muted-foreground">
-              This will update all teams' purses to this value
-            </p>
-          </div>
-          
-          <Button 
-            className="w-full" 
-            variant="outline"
-            disabled={updatingPurse}
-            onClick={handleUpdateAllPurses}
-          >
-            {updatingPurse ? (
-              <>
-                <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                Updating...
-              </>
-            ) : (
-              'Update All Teams'
-            )}
-          </Button>
+    <div className="space-y-4">
+      <div className="flex items-center text-[#1e293b] mb-2">
+        <RefreshCw className="h-5 w-5 mr-2 text-[#a78bfa]" />
+        <h2 className="font-display font-bold text-lg">Update All Purses</h2>
+      </div>
+      <div className="space-y-4">
+        <div className="space-y-1.5">
+          <Label htmlFor="globalPurse" className="text-xs font-semibold text-[#334155]">New Purse Value (Cr)</Label>
+          <Input 
+            id="globalPurse" 
+            type="number" 
+            min={0} 
+            step={0.5} 
+            value={globalPurse}
+            onChange={(e) => setGlobalPurse(parseFloat(e.target.value))}
+            className="glass-input rounded-xl h-10"
+            required 
+          />
+          <p className="text-[10px] text-[#475569]">
+            This will update all teams' purses to this value
+          </p>
         </div>
-      </CardContent>
-    </Card>
+        
+        <Button 
+          className="w-full secondary-button" 
+          disabled={updatingPurse}
+          onClick={handleUpdateAllPurses}
+        >
+          {updatingPurse ? (
+            <>
+              <Loader2 className="mr-2 h-4 w-4 animate-spin outline-none" />
+              Updating...
+            </>
+          ) : (
+            'Update All Teams'
+          )}
+        </Button>
+      </div>
+    </div>
   );
 };
 

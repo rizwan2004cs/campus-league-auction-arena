@@ -7,6 +7,7 @@ import { supabase } from '@/integrations/supabase/client';
 
 interface LeaderboardProps {
   teams: Team[];
+  startIndex?: number;
 }
 
 interface PlayerData {
@@ -28,7 +29,7 @@ interface RankedTeam extends Team {
   prioritySum: number;
 }
 
-const Leaderboard = ({ teams }: LeaderboardProps) => {
+const Leaderboard = ({ teams, startIndex = 1 }: LeaderboardProps) => {
   const [rankedTeams, setRankedTeams] = useState<RankedTeam[]>([]);
   const [prevRanks, setPrevRanks] = useState<Record<string, number>>({});
 
@@ -96,27 +97,27 @@ const Leaderboard = ({ teams }: LeaderboardProps) => {
   }, [teams]);
 
   return (
-    <div className="card-with-shadow">
-      <div className="flex items-center space-x-2 mb-4">
-        <Trophy className="h-5 w-5 text-yellow-500" />
-        <h3 className="text-lg font-semibold">Leaderboard</h3>
+    <div className="glass-card flex flex-col max-h-[500px]">
+      <div className="gradient-header px-4 py-3 flex items-center gap-2 flex-shrink-0">
+        <Trophy className="h-4 w-4 text-yellow-500" />
+        <h3 className="font-display font-bold text-sm text-[#1e293b]">Leaderboard</h3>
       </div>
       
       {teams.length === 0 ? (
-        <div className="text-center py-8 text-muted-foreground">
+        <div className="text-center py-8 text-[#475569] flex-1">
           <p>No teams available</p>
-          <p className="text-sm">Add teams to see the leaderboard</p>
+          <p className="text-xs">Add teams to see the leaderboard</p>
         </div>
       ) : (
-        <div className="overflow-x-auto">
+        <div className="overflow-x-auto overflow-y-auto no-scrollbar flex-1 p-2">
           <Table>
             <TableHeader>
-              <TableRow>
-                <TableHead className="w-12 text-center">#</TableHead>
-                <TableHead>Team</TableHead>
-                <TableHead className="text-right">Points</TableHead>
-                <TableHead className="text-right">Purse Left</TableHead>
-                <TableHead>Players</TableHead>
+              <TableRow className="border-white/20 hover:bg-transparent">
+                <TableHead className="w-10 text-center text-xs font-semibold text-[#334155]">#</TableHead>
+                <TableHead className="text-xs font-semibold text-[#334155]">Team</TableHead>
+                <TableHead className="text-right text-xs font-semibold text-[#334155]">Points</TableHead>
+                <TableHead className="text-right text-xs font-semibold text-[#334155]">Purse Left</TableHead>
+                <TableHead className="text-xs font-semibold text-[#334155]">Players</TableHead>
               </TableRow>
             </TableHeader>
             <TableBody>
@@ -124,6 +125,7 @@ const Leaderboard = ({ teams }: LeaderboardProps) => {
                 {rankedTeams.map((team, index) => {
                   const hasMovedUp = prevRanks[team.id] > index;
                   const hasMovedDown = prevRanks[team.id] < index;
+                  const displayIndex = index + startIndex;
                   
                   return (
                     <motion.tr
@@ -134,24 +136,24 @@ const Leaderboard = ({ teams }: LeaderboardProps) => {
                         opacity: 1, 
                         y: 0,
                         scale: hasMovedUp ? [1, 1.02, 1] : 1,
-                        background: hasMovedUp ? ['#fff', '#f0fdf4', '#fff'] : '#fff'
+                        background: hasMovedUp ? ['rgba(255,255,255,0)', 'rgba(255,255,255,0.8)', 'rgba(255,255,255,0)'] : 'rgba(255,255,255,0)'
                       }}
                       exit={{ opacity: 0, y: 20 }}
                       transition={{ duration: 0.3 }}
-                      className={index === 0 ? "font-medium" : ""}
+                      className={`border-white/10 hover:bg-white/40 transition-colors ${displayIndex === 1 ? "font-medium" : ""}`}
                     >
-                      <TableCell className="text-center">
-                        {index === 0 ? (
-                          <span className="inline-flex items-center justify-center h-6 w-6 rounded-full bg-yellow-100 text-yellow-700">
+                      <TableCell className="text-center p-2">
+                        {displayIndex === 1 ? (
+                          <span className="inline-flex items-center justify-center h-6 w-6 rounded-full bg-gradient-to-br from-[#ffd4b8] to-[#ffb8d9] text-[#1e293b] font-bold text-xs shadow-sm">
                             1
                           </span>
                         ) : (
-                          index + 1
+                          <span className="text-xs text-[#334155] font-semibold">{displayIndex}</span>
                         )}
                       </TableCell>
-                      <TableCell className="font-medium">{team.name}</TableCell>
-                      <TableCell className="text-right">
-                        <div className="flex items-center justify-end">
+                      <TableCell className="font-display font-semibold text-sm text-[#1e293b] p-2">{team.name}</TableCell>
+                      <TableCell className="text-right p-2">
+                        <div className="flex items-center justify-end font-bold text-[#1e293b]">
                           {team.points}
                           {hasMovedUp && (
                             <motion.div
@@ -159,14 +161,14 @@ const Leaderboard = ({ teams }: LeaderboardProps) => {
                               animate={{ opacity: 1, y: 0 }}
                               transition={{ duration: 0.2 }}
                             >
-                              <ChevronsUp className="inline-block h-4 w-4 text-green-600 ml-1" />
+                              <ChevronsUp className="inline-block h-4 w-4 text-[#a78bfa] ml-1" />
                             </motion.div>
                           )}
                         </div>
                       </TableCell>
-                      <TableCell className="text-right">{team.purse} Cr</TableCell>
-                      <TableCell>
-                        <div className="text-sm text-muted-foreground">
+                      <TableCell className="text-right font-display font-bold text-[#334155] text-sm p-2">{team.purse} Cr</TableCell>
+                      <TableCell className="p-2">
+                        <div className="text-[10px] text-[#475569] leading-tight line-clamp-2">
                           {team.playerNames.length > 0 
                             ? team.playerNames.join(', ') 
                             : 'No players'}

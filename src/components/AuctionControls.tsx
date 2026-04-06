@@ -12,7 +12,7 @@ import {
 } from '@/components/ui/select';
 import { Team } from './TeamCard';
 import { Player } from './PlayerCard';
-import { Hammer, RotateCcw, AlertCircle, Loader2 } from 'lucide-react';
+import { Hammer, RotateCcw, AlertCircle, Loader2, SkipForward } from 'lucide-react';
 import { modifyPlayerBid } from '@/services/teamService';
 import { useToast } from '@/hooks/use-toast';
 import { Alert, AlertDescription } from '@/components/ui/alert';
@@ -21,6 +21,7 @@ interface AuctionControlsProps {
   player: Player;
   teams: Team[];
   onPlaceBid: (playerId: string, teamId: string, bidAmount: number) => Promise<void>;
+  onPassPlayer?: (playerId: string) => void;
   playerLimits: { [key: string]: number };
   bidLoading?: boolean;
 }
@@ -29,6 +30,7 @@ const AuctionControls = ({
   player,
   teams,
   onPlaceBid,
+  onPassPlayer,
   playerLimits,
   bidLoading = false
 }: AuctionControlsProps) => {
@@ -137,21 +139,21 @@ const AuctionControls = ({
   };
 
   return (
-    <div className="card-with-shadow">
-      <h3 className="text-lg font-semibold mb-4">Auction Controls</h3>
+    <div className="w-full">
+      <h3 className="font-display font-bold text-sm text-[#1e293b] mb-3">Auction Controls</h3>
       
-      <div className="space-y-4">
-        <div className="space-y-2">
-          <Label htmlFor="team-select">Select Team</Label>
+      <div className="space-y-3">
+        <div className="space-y-1.5">
+          <Label htmlFor="team-select" className="text-xs font-semibold text-[#334155]">Select Team</Label>
           <Select 
             value={selectedTeamId} 
             onValueChange={setSelectedTeamId}
             disabled={bidLoading || loading}
           >
-            <SelectTrigger id="team-select" className="w-full">
+            <SelectTrigger id="team-select" className="w-full glass-input rounded-xl h-10">
               <SelectValue placeholder="Select team to bid" />
             </SelectTrigger>
-            <SelectContent>
+            <SelectContent className="glass-card border-0">
               {eligibleTeams.length === 0 ? (
                 <SelectItem value="no-teams" disabled>
                   No eligible teams
@@ -167,8 +169,8 @@ const AuctionControls = ({
           </Select>
         </div>
         
-        <div className="space-y-2">
-          <Label htmlFor="bid-amount">Bid Amount (Cr)</Label>
+        <div className="space-y-1.5">
+          <Label htmlFor="bid-amount" className="text-xs font-semibold text-[#334155]">Bid Amount (Cr)</Label>
           <Input
             id="bid-amount"
             type="number"
@@ -177,17 +179,17 @@ const AuctionControls = ({
             step="0.5"
             value={bidAmount}
             onChange={(e) => setBidAmount(parseFloat(e.target.value))}
-            className={error ? "border-red-500" : ""}
+            className={`glass-input rounded-xl h-10 ${error ? "border-red-500" : ""}`}
             disabled={bidLoading || loading}
           />
-          <p className="text-xs text-muted-foreground">
+          <p className="text-[10px] text-[#475569]">
             Minimum bid: {player.base_price} Cr
             {selectedTeam && ` | Maximum bid: ${selectedTeam.purse} Cr`}
           </p>
         </div>
         
         {error && (
-          <Alert variant="destructive" className="py-2">
+          <Alert variant="destructive" className="py-2 bg-red-50/50 backdrop-blur-sm border-red-200">
             <AlertCircle className="h-4 w-4" />
             <AlertDescription className="text-xs">
               {error}
@@ -197,26 +199,39 @@ const AuctionControls = ({
         
         <div className="flex flex-col space-y-2 pt-2">
           {!player.sold ? (
-            <Button
-              className="w-full"
-              onClick={handlePlaceBid}
-              disabled={!selectedTeamId || bidAmount < player.base_price || loading || bidLoading || eligibleTeams.length === 0 || !!error}
-            >
-              {bidLoading || loading ? (
-                <>
-                  <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                  Processing...
-                </>
-              ) : (
-                <>
-                  <Hammer className="mr-2 h-4 w-4" />
-                  Place Bid
-                </>
+            <>
+              <Button
+                className="w-full primary-button"
+                onClick={handlePlaceBid}
+                disabled={!selectedTeamId || bidAmount < player.base_price || loading || bidLoading || eligibleTeams.length === 0 || !!error}
+              >
+                {bidLoading || loading ? (
+                  <>
+                    <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                    Processing...
+                  </>
+                ) : (
+                  <>
+                    <Hammer className="mr-2 h-4 w-4" />
+                    Place Bid
+                  </>
+                )}
+              </Button>
+              {onPassPlayer && (
+                <Button
+                  variant="outline"
+                  className="w-full rounded-xl border-[#94a3b8]/30 hover:bg-[#f1f5f9] text-[#475569] hover:text-[#334155]"
+                  onClick={() => onPassPlayer(player.id)}
+                  disabled={loading || bidLoading}
+                >
+                  <SkipForward className="mr-2 h-4 w-4" />
+                  Pass Player
+                </Button>
               )}
-            </Button>
+            </>
           ) : (
             <Button
-              className="w-full"
+              className="w-full primary-button"
               onClick={handleModifyBid}
               disabled={loading || bidLoading || (selectedTeamId === '' && player.sold) || !!error}
             >

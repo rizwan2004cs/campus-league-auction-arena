@@ -1,20 +1,15 @@
 
 import { useEffect, useState } from 'react';
+import { useNavigate } from 'react-router-dom';
 import { useRequireAuth } from '@/lib/auth';
 import { useToast } from '@/components/ui/use-toast';
 import { supabase } from '@/integrations/supabase/client';
-import { fetchTeams as fetchTeamsService, fetchPublicAuctionData, modifyPlayerBid } from '@/services/teamService';
+import { fetchTeams as fetchTeamsService, fetchPublicAuctionData, modifyPlayerBid, fetchRecentlySoldPlayer } from '@/services/teamService';
+import { RecentlySoldWidget } from '@/components/RecentlySoldWidget';
 import PlayerCard, { Player } from '@/components/PlayerCard';
 import TeamCard, { Team } from '@/components/TeamCard';
 import AuctionControls from '@/components/AuctionControls';
 import Leaderboard from '@/components/Leaderboard';
-import { 
-  Card, 
-  CardContent,
-  CardFooter,
-  CardHeader,
-  CardTitle,
-} from '@/components/ui/card';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Badge } from '@/components/ui/badge';
 import { 
@@ -25,129 +20,83 @@ import {
   Loader2, 
   Timer, 
   Users, 
+  PartyPopper
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
+import { motion, AnimatePresence } from 'framer-motion';
+import { generateAuctionCommentary } from '@/services/aiService';
+import { ErrorBoundary } from '@/components/ErrorBoundary';
 
+interface CelebrationData {
+  player: Player;
+  team: Team;
+  bidAmount: number;
+}
 
 const AuctionRoom = () => {
   const { user, loading: authLoading } = useRequireAuth();
   const { toast } = useToast();
+  const navigate = useNavigate();
   
   const [currentPlayer, setCurrentPlayer] = useState<Player | null>(null);
   const [players, setPlayers] = useState<Player[]>([]);
+  const [recentlySoldPlayer, setRecentlySoldPlayer] = useState<Player | null>(null);
   const [teams, setTeams] = useState<Team[]>([]);
   const [teamsWithPlayers, setTeamsWithPlayers] = useState<Team[]>([]);
   const [categoryCounts, setCategoryCounts] = useState({
-    'Bowler': 0,
-    'Batter': 0,
-    'All-Rounder': 0
+    'Bowler': 0, 'Batter': 0, 'All-Rounder': 0
   });
   const [playerLimits, setPlayerLimits] = useState({
-    'Bowler': 2,
-    'Batter': 2,
-    'All-Rounder': 2
+    'Bowler': 2, 'Batter': 2, 'All-Rounder': 2
   });
   const [loading, setLoading] = useState(true);
   const [bidLoading, setBidLoading] = useState(false);
+  const [celebrationData, setCelebrationData] = useState<CelebrationData | null>(null);
   
   const fetchSettings = async () => {
     try {
-      const { data, error } = await supabase
-        .from('settings')
-        .select('*')
-        .limit(1)
-        .single();
-        
+      const { data, error } = await supabase.from('settings').select('*').limit(1).single();
       if (error) {
-        await supabase
-          .from('settings')
-          .insert([
-            { 
-              players_per_team: 2, 
-              initial_purse: 50 
-            }
-          ]);
-        
-        setPlayerLimits({
-          'Bowler': 2,
-          'Batter': 2,
-          'All-Rounder': 2
-        });
+        await supabase.from('settings').insert([{ players_per_team: 2, initial_purse: 50 }]);
+        setPlayerLimits({ 'Bowler': 2, 'Batter': 2, 'All-Rounder': 2 });
       } else if (data) {
         setPlayerLimits({
-          'Bowler': data.players_per_team,
-          'Batter': data.players_per_team,
-          'All-Rounder': data.players_per_team
+          'Bowler': data.players_per_team, 'Batter': data.players_per_team, 'All-Rounder': data.players_per_team
         });
       }
-    } catch (error) {
-      console.error('Error fetching settings:', error);
-    }
+    } catch (error) { console.error('Error fetching settings:', error); }
   };
   
   const fetchPlayers = async () => {
     try {
-      const { players: fetchedPlayers, teams: fetchedTeams, error } = await fetchPublicAuctionData();
-      
-      if (error) {
-        throw error;
-      }
-      
+      const { players: fetchedPlayers, error } = await fetchPublicAuctionData();
+      if (error) throw error;
       const unsoldPlayers = fetchedPlayers.filter(player => !player.sold);
       setPlayers(unsoldPlayers);
-      
       if (unsoldPlayers.length > 0 && !currentPlayer) {
         setCurrentPlayer(unsoldPlayers[0]);
       } else if (unsoldPlayers.length > 0 && currentPlayer && currentPlayer.sold) {
-        // If current player was sold, select the next one
         setCurrentPlayer(unsoldPlayers[0]);
       }
-      
-      const counts = {
-        'Bowler': 0,
-        'Batter': 0,
-        'All-Rounder': 0
-      };
-      
-      unsoldPlayers.forEach((player) => {
-        counts[player.category as keyof typeof counts]++;
-      });
-      
+      const counts = { 'Bowler': 0, 'Batter': 0, 'All-Rounder': 0 };
+      unsoldPlayers.forEach((player) => { counts[player.category as keyof typeof counts]++; });
       setCategoryCounts(counts);
     } catch (error: any) {
-      toast({
-        title: 'Error fetching players',
-        description: error.message,
-        variant: 'destructive',
-      });
+      toast({ title: 'Error fetching players', description: error.message, variant: 'destructive' });
     }
   };
   
   const fetchTeams = async () => {
     try {
-      // Fetch teams and teams with players using service functions
       const { teams: fetchedTeams, error: teamsError } = await fetchTeamsService();
       const { teams: fetchedTeamsWithPlayers, error: playersError } = await fetchPublicAuctionData();
-      
-      if (teamsError) {
-        throw teamsError;
-      }
-      
-      if (playersError) {
-        throw playersError;
-      }
-      
+      if (teamsError) throw teamsError;
+      if (playersError) throw playersError;
       setTeams(fetchedTeams);
       setTeamsWithPlayers(fetchedTeamsWithPlayers);
     } catch (error: any) {
-      toast({
-        title: 'Error fetching teams',
-        description: error.message,
-        variant: 'destructive',
-      });
-    } finally {
-      setLoading(false);
-    }
+      toast({ title: 'Error fetching teams', description: error.message, variant: 'destructive' });
+    } finally { setLoading(false); }
   };
   
   const fetchAllData = async () => {
@@ -155,45 +104,22 @@ const AuctionRoom = () => {
     await fetchSettings();
     await fetchPlayers();
     await fetchTeams();
+    const recent = await fetchRecentlySoldPlayer();
+    setRecentlySoldPlayer(recent);
   };
   
   useEffect(() => {
     if (user) {
       fetchAllData();
-      
-      const playersSubscription = supabase
-        .channel('players-changes')
-        .on('postgres_changes', { 
-          event: '*', 
-          schema: 'public', 
-          table: 'players' 
-        }, () => {
-          fetchPlayers();
-        })
+      const playersSubscription = supabase.channel('players-changes')
+        .on('postgres_changes', { event: '*', schema: 'public', table: 'players' }, () => fetchPlayers())
         .subscribe();
-        
-      const teamsSubscription = supabase
-        .channel('teams-changes')
-        .on('postgres_changes', { 
-          event: '*', 
-          schema: 'public', 
-          table: 'teams' 
-        }, () => {
-          fetchTeams();
-        })
+      const teamsSubscription = supabase.channel('teams-changes')
+        .on('postgres_changes', { event: '*', schema: 'public', table: 'teams' }, () => fetchTeams())
         .subscribe();
-        
-      const teamPlayersSubscription = supabase
-        .channel('team-players-changes')
-        .on('postgres_changes', { 
-          event: '*', 
-          schema: 'public', 
-          table: 'team_players' 
-        }, () => {
-          fetchTeams();
-        })
+      const teamPlayersSubscription = supabase.channel('team-players-changes')
+        .on('postgres_changes', { event: '*', schema: 'public', table: 'team_players' }, () => fetchTeams())
         .subscribe();
-      
       return () => {
         supabase.removeChannel(playersSubscription);
         supabase.removeChannel(teamsSubscription);
@@ -204,9 +130,7 @@ const AuctionRoom = () => {
   
   const categorizedPlayers = players.reduce((acc, player) => {
     if (!player.sold && player.id !== currentPlayer?.id) {
-      if (!acc[player.category]) {
-        acc[player.category] = [];
-      }
+      if (!acc[player.category]) acc[player.category] = [];
       acc[player.category].push(player);
     }
     return acc;
@@ -215,228 +139,301 @@ const AuctionRoom = () => {
   const handlePlaceBid = async (playerId: string, teamId: string, bidAmount: number) => {
     try {
       setBidLoading(true);
-      
-      // Validate player is not already sold
       const playerToSell = players.find(p => p.id === playerId);
-      if (!playerToSell || playerToSell.sold) {
-        throw new Error('This player has already been sold!');
-      }
+      if (!playerToSell || playerToSell.sold) throw new Error('This player has already been sold!');
+      const { success, error } = await modifyPlayerBid(playerId, { sold: true, sold_to: teamId, bid_price: bidAmount });
+      if (!success) throw error || new Error('Failed to place bid');
       
-      const { success, error } = await modifyPlayerBid(playerId, {
-        sold: true,
-        sold_to: teamId,
-        bid_price: bidAmount
-      });
+      const winningTeamObj = teams.find(t => t.id === teamId) || { id: teamId, name: 'Unknown Team', purse: 0, points: 0 };
       
-      if (!success) {
-        throw error || new Error('Failed to place bid');
-      }
-      
-      toast({
-        title: 'Bid placed successfully',
-        description: `Player has been sold for ${bidAmount} Cr`,
-      });
-      
-      // Update local state immediately to avoid waiting for realtime updates
-      if (currentPlayer && currentPlayer.id === playerId) {
-        setCurrentPlayer(prev => prev ? {...prev, sold: true, sold_to: teamId, bid_price: bidAmount} : null);
-        
-        // Find the next unsold player
-        const nextPlayer = players.find(p => !p.sold && p.id !== playerId);
-        if (nextPlayer) {
-          setCurrentPlayer(nextPlayer);
-        }
-      }
-      
-      // Update teams count locally
-      setTeams(prevTeams => {
-        return prevTeams.map(team => {
-          if (team.id === teamId) {
-            const playerToAdd = players.find(p => p.id === playerId);
-            const updatedPurse = team.purse - bidAmount;
-            const updatedPoints = team.points + (playerToAdd?.points || 0);
-            return { ...team, purse: updatedPurse, points: updatedPoints };
-          }
-          return team;
+      generateAuctionCommentary({
+        event: 'SOLD',
+        playerName: playerToSell.name,
+        teamName: winningTeamObj.name,
+        price: bidAmount
+      }).then(text => {
+        supabase.channel('auction-events').send({
+          type: 'broadcast',
+          event: 'AI_MEME',
+          payload: { text, title: 'Live Commentary 🎙️' }
         });
       });
       
-      // Update player list locally
-      setPlayers(prevPlayers => {
-        return prevPlayers.map(player => {
-          if (player.id === playerId) {
-            return { ...player, sold: true, sold_to: teamId, bid_price: bidAmount };
-          }
-          return player;
-        }).filter(p => !p.sold || p.id === playerId);
-      });
-      
-      // Update category counts locally
+      if (currentPlayer && currentPlayer.id === playerId) {
+        const winningTeamObj = teams.find(t => t.id === teamId) || { id: teamId, name: 'Unknown Team', purse: 0, points: 0 };
+        
+        // Trigger celebration overlay
+        setCelebrationData({
+          player: { ...currentPlayer, sold: true, sold_to: teamId, bid_price: bidAmount },
+          team: winningTeamObj,
+          bidAmount: bidAmount
+        });
+
+        // Hide celebration after 4 seconds
+        setTimeout(() => {
+          setCelebrationData(null);
+        }, 4000);
+        
+        // Optimistically update current player to next so background is ready
+        const nextPlayer = players.find(p => !p.sold && p.id !== playerId);
+        if (nextPlayer) setCurrentPlayer(nextPlayer);
+      }
+      setTeams(prevTeams => prevTeams.map(team => {
+        if (team.id === teamId) {
+          const playerToAdd = players.find(p => p.id === playerId);
+          return { ...team, purse: team.purse - bidAmount, points: team.points + (playerToAdd?.points || 0) };
+        }
+        return team;
+      }));
+      setPlayers(prevPlayers => prevPlayers.map(player => {
+        if (player.id === playerId) return { ...player, sold: true, sold_to: teamId, bid_price: bidAmount };
+        return player;
+      }).filter(p => !p.sold || p.id === playerId));
       const soldPlayer = players.find(p => p.id === playerId);
       if (soldPlayer) {
         setCategoryCounts(prev => ({
-          ...prev,
-          [soldPlayer.category]: Math.max(0, prev[soldPlayer.category as keyof typeof prev] - 1)
+          ...prev, [soldPlayer.category]: Math.max(0, prev[soldPlayer.category as keyof typeof prev] - 1)
         }));
       }
-      
     } catch (error: any) {
-      toast({
-        title: 'Error placing bid',
-        description: error.message,
-        variant: 'destructive',
-      });
+      toast({ title: 'Error placing bid', description: error.message, variant: 'destructive' });
     } finally {
       setBidLoading(false);
-      
-      // Fetch fresh data after a short delay to ensure consistency
-      setTimeout(() => {
-        fetchPlayers();
-        fetchTeams();
+      setTimeout(async () => {
+        await fetchPlayers();
+        await fetchTeams();
+        const recent = await fetchRecentlySoldPlayer();
+        setRecentlySoldPlayer(recent);
+        
+        // Broadcast explicit refresh signal
+        supabase.channel('auction-events').send({
+          type: 'broadcast',
+          event: 'REFRESH',
+          payload: {}
+        });
       }, 500);
     }
   };
   
-  const handleSelectPlayer = (player: Player) => {
-    setCurrentPlayer(player);
+  const handlePassPlayer = (playerId: string) => {
+    const playerToPass = players.find(p => p.id === playerId);
+    if (playerToPass) {
+      generateAuctionCommentary({
+        event: 'UNSOLD',
+        playerName: playerToPass.name,
+      }).then(text => {
+        supabase.channel('auction-events').send({
+          type: 'broadcast',
+          event: 'AI_MEME',
+          payload: { text, title: 'Live Commentary 🎙️' }
+        });
+      });
+    }
+    
+    // Broadcast pass event for sync mechanisms if needed
+    supabase.channel('auction-events').send({
+      type: 'broadcast',
+      event: 'PASS',
+      payload: { playerId }
+    });
+    
+    const nextPlayer = players.find(p => !p.sold && p.id !== playerId);
+    if (nextPlayer) {
+      setCurrentPlayer(nextPlayer);
+    }
+    
+    toast({ title: 'Player Skipped', description: 'Moved to next available player.' });
+  };
+  
+  const handleSelectPlayer = (player: Player) => setCurrentPlayer(player);
+  
+  const handleCompleteAuction = () => {
+    generateAuctionCommentary({ event: 'AUCTION_COMPLETE' }).then(text => {
+      supabase.channel('auction-events').send({
+         type: 'broadcast',
+         event: 'AI_MEME',
+         payload: { text, title: 'Final Verdict 🏆' }
+      });
+    });
+    
+    // Broadcast original complete event to trigger any sync mechanisms
+    supabase.channel('auction-events').send({
+       type: 'broadcast',
+       event: 'AUCTION_COMPLETE',
+       payload: {}
+    });
+    navigate('/summary');
   };
   
   if (authLoading || loading) {
     return (
-      <div className="flex justify-center items-center min-h-screen">
+      <div className="flex justify-center items-center h-full">
         <Loader2 className="h-8 w-8 animate-spin text-primary" />
-        <span className="ml-2">Loading auction data...</span>
+        <span className="ml-2 text-[#475569]">Loading auction…</span>
       </div>
     );
   }
   
   return (
-    <div className="container mx-auto px-4 py-8">
-      <div className="mb-8">
-        <h1 className="text-3xl font-bold">Auction Room</h1>
-        <p className="text-muted-foreground">Bid on players for your teams</p>
-      </div>
+    <ErrorBoundary>
+      <div className="h-full overflow-y-auto no-scrollbar pb-10 relative">
       
-      <div className="grid grid-cols-3 gap-4 mb-8">
-        <div className="card-with-shadow flex items-center space-x-4">
-          <Badge variant="outline" className="bg-green-100 text-green-800 px-3 py-1 text-lg">
-            {categoryCounts['Bowler']}
-          </Badge>
+      {/* Celebration Overlay */}
+      <AnimatePresence>
+        {celebrationData && (
+          <motion.div 
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+            className="fixed inset-0 z-50 flex items-center justify-center bg-[#1e293b]/80 backdrop-blur-md p-4 overflow-hidden"
+          >
+            {/* Optional Confetti could go here if library installed, or just CSS animations */}
+            <div className="absolute inset-0 z-0 flex justify-center pb-20">
+              <div className="w-[800px] h-[800px] bg-gradient-to-tr from-[#ff8787]/20 to-[#a78bfa]/20 rounded-full blur-[100px] animate-pulse"></div>
+            </div>
+
+            <motion.div 
+              initial={{ scale: 0.8, y: 50 }}
+              animate={{ scale: 1, y: 0 }}
+              exit={{ scale: 0.8, opacity: 0 }}
+              transition={{ type: "spring", bounce: 0.5 }}
+              className="z-10 flex flex-col items-center w-full max-w-lg"
+            >
+              <motion.div 
+                initial={{ scale: 0 }}
+                animate={{ scale: 1, rotate: [0, -10, 10, -5, 5, 0] }}
+                transition={{ delay: 0.2, duration: 0.6, ease: "easeInOut" }}
+                className="mb-8"
+              >
+                <Badge className="bg-[#ff8787] text-white hover:bg-[#ff8787] text-3xl font-display font-extrabold px-8 py-3 rounded-full uppercase tracking-[0.2em] shadow-[0_0_40px_rgba(253,130,135,0.6)]">
+                  <PartyPopper className="w-8 h-8 mr-3 inline-block" />
+                  Sold!
+                </Badge>
+              </motion.div>
+
+              <div className="w-full relative shadow-2xl rounded-3xl overflow-hidden ring-4 ring-white/20">
+                <PlayerCard player={celebrationData.player} showActions={false} isAuctionCard={true} />
+                
+                <motion.div 
+                  initial={{ y: "100%" }}
+                  animate={{ y: 0 }}
+                  transition={{ delay: 0.8, type: "spring", bounce: 0.2 }}
+                  className="absolute bottom-0 left-0 right-0 bg-white/90 backdrop-blur-xl p-6 border-t font-display text-center"
+                >
+                  <p className="text-sm font-semibold text-[#475569] uppercase mb-1">Acquired By</p>
+                  <h3 className="text-2xl font-extrabold text-[#1e293b] leading-tight mb-2">{celebrationData.team.name}</h3>
+                  <div className="inline-flex items-center justify-center bg-[#ff8787]/10 text-[#ff8787] px-4 py-2 rounded-xl border border-[#ff8787]/20">
+                    <span className="text-sm font-bold uppercase mr-2">For</span>
+                    <span className="text-2xl font-black">{celebrationData.bidAmount} Cr</span>
+                  </div>
+                </motion.div>
+              </div>
+            </motion.div>
+          </motion.div>
+        )}
+      </AnimatePresence>
+
+      <div className="max-w-7xl mx-auto px-4 md:px-8 py-6 space-y-6">
+        
+        {/* Header Section */}
+        <div className="flex items-center justify-between flex-wrap gap-4">
           <div>
-            <h3 className="font-medium">Bowlers</h3>
-            <p className="text-xs text-muted-foreground">Remaining</p>
+            <h1 className="page-header text-3xl">Auction Room</h1>
+            <p className="page-subtitle text-sm mt-1">Bid on players for your teams</p>
+          </div>
+          <div className="flex items-center flex-wrap gap-3">
+            {[
+              { label: 'Bowlers', count: categoryCounts['Bowler'], cls: 'cat-bowler' },
+              { label: 'Batters', count: categoryCounts['Batter'], cls: 'cat-batter' },
+              { label: 'All-Rounders', count: categoryCounts['All-Rounder'], cls: 'cat-allrounder' },
+            ].map(({ label, count, cls }) => (
+              <div key={label} className="stat-chip flex items-center gap-3">
+                <span className={`w-8 h-8 rounded-xl ${cls} flex items-center justify-center font-display font-bold text-lg`}>{count}</span>
+                <span className="text-xs font-semibold text-[#1e293b] uppercase tracking-wider hidden sm:inline-block">{label}</span>
+              </div>
+            ))}
+            
+            <div className="h-8 w-px bg-white/30 hidden md:block mx-1"></div>
+            
+            <Button 
+              onClick={handleCompleteAuction}
+              className="primary-button h-[42px] px-5 rounded-xl text-sm font-semibold shadow-sm"
+            >
+              <Award className="mr-2 h-4 w-4" />
+              Complete Auction
+            </Button>
           </div>
         </div>
         
-        <div className="card-with-shadow flex items-center space-x-4">
-          <Badge variant="outline" className="bg-blue-100 text-blue-800 px-3 py-1 text-lg">
-            {categoryCounts['Batter']}
-          </Badge>
-          <div>
-            <h3 className="font-medium">Batters</h3>
-            <p className="text-xs text-muted-foreground">Remaining</p>
-          </div>
-        </div>
-        
-        <div className="card-with-shadow flex items-center space-x-4">
-          <Badge variant="outline" className="bg-purple-100 text-purple-800 px-3 py-1 text-lg">
-            {categoryCounts['All-Rounder']}
-          </Badge>
-          <div>
-            <h3 className="font-medium">All-Rounders</h3>
-            <p className="text-xs text-muted-foreground">Remaining</p>
-          </div>
-        </div>
-      </div>
-      
-      <div className="grid lg:grid-cols-3 gap-8">
-        <div className="lg:col-span-2 space-y-6">
-          {currentPlayer ? (
-            <Card className="overflow-hidden">
-              <CardHeader className="gradient-header text-white pb-2">
-                <CardTitle className="flex items-center justify-between">
-                  <span>Current Player</span>
-                  <Timer className="h-5 w-5" />
-                </CardTitle>
-              </CardHeader>
-              <CardContent className="p-0">
-                <PlayerCard 
-                  player={currentPlayer} 
-                  showActions={false}
-                  isAuctionCard={true}
-                />
-              </CardContent>
-              <CardFooter className="p-4 bg-gray-50">
-                <AuctionControls 
-                  player={currentPlayer}
-                  teams={teams}
-                  onPlaceBid={handlePlaceBid}
-                  playerLimits={playerLimits}
-                  bidLoading={bidLoading}
-                />
-              </CardFooter>
-            </Card>
-          ) : (
-            <Card>
-              <CardContent className="p-8 text-center">
-                <CheckCircle className="h-16 w-16 mx-auto text-green-500 mb-4" />
-                <h2 className="text-2xl font-bold mb-2">Auction Complete</h2>
-                <p className="text-muted-foreground">
-                  All players have been auctioned
-                </p>
-              </CardContent>
-            </Card>
-          )}
+        {/* Main Layout: 2/3 Player, 1/3 Leaderboard */}
+        <div className="grid lg:grid-cols-3 gap-6">
           
-          <Card>
-            <CardHeader className="pb-2">
-              <CardTitle className="flex items-center">
-                <List className="h-5 w-5 mr-2" />
+          {/* Left Column: Player Card + Upcoming (spanning 2 columns) */}
+          <div className="lg:col-span-2 space-y-6">
+            {currentPlayer ? (
+              <div className="glass-card overflow-hidden">
+                <div className="gradient-header px-6 py-4 flex items-center justify-between">
+                  <span className="font-display font-bold text-[#1e293b]">Current Player</span>
+                  <Timer className="h-5 w-5 text-[#334155]" />
+                </div>
+                {/* The PlayerCard will automatically expand beautifully because of lg:col-span-2 */}
+                <div className="p-0">
+                  <PlayerCard player={currentPlayer} showActions={false} isAuctionCard={true} />
+                </div>
+                <div className="bg-white/40 p-5 mt-2 border-t border-white/30 backdrop-blur-sm">
+                  <AuctionControls 
+                    player={currentPlayer}
+                    teams={teams}
+                    onPlaceBid={handlePlaceBid}
+                    onPassPlayer={handlePassPlayer}
+                    playerLimits={playerLimits}
+                    bidLoading={bidLoading}
+                  />
+                </div>
+              </div>
+            ) : (
+              <div className="glass-card p-12 text-center">
+                <CheckCircle className="h-16 w-16 mx-auto text-green-500 mb-4" />
+                <h2 className="font-display font-bold text-2xl text-[#1e293b]">Auction Complete</h2>
+                <p className="text-[#475569] mt-2">All players have been successfully auctioned.</p>
+              </div>
+            )}
+            
+            {/* Upcoming Players Queue */}
+            <div className="glass-card p-6">
+              <h3 className="font-display font-bold text-lg text-[#1e293b] flex items-center gap-2 mb-4">
+                <List className="h-5 w-5 text-[#9b8ec4]" />
                 Upcoming Players
-              </CardTitle>
-            </CardHeader>
-            <CardContent>
+              </h3>
+              
               {Object.keys(categorizedPlayers).length === 0 ? (
-                <div className="text-center p-4 text-muted-foreground">
-                  <p>No more players in queue</p>
+                <div className="text-center py-8">
+                  <p className="text-sm text-[#475569]">No more players in queue</p>
                 </div>
               ) : (
-                <div className="space-y-4">
+                <div className="space-y-6">
                   {Object.entries(categorizedPlayers).map(([category, categoryPlayers]) => (
-                    <div key={category} className="space-y-2">
-                      <h3 className="font-semibold text-sm text-muted-foreground">
+                    <div key={category} className="space-y-3">
+                      <h4 className="font-semibold text-xs uppercase tracking-wider text-[#475569]">
                         {category}s ({categoryPlayers.length})
-                      </h3>
-                      <div className="divide-y">
+                      </h4>
+                      <div className="grid sm:grid-cols-2 gap-2">
                         {categoryPlayers.map((player) => (
                           <div 
-                            key={player.id} 
-                            className="py-3 flex justify-between items-center cursor-pointer hover:bg-gray-50 transition-colors px-2 rounded"
+                            key={player.id}
+                            className="bg-white/30 hover:bg-white/60 transition-all px-4 py-3 rounded-xl cursor-pointer flex items-center justify-between shadow-sm border border-white/10"
                             onClick={() => handleSelectPlayer(player)}
                           >
-                            <div className="flex items-center space-x-3">
-                              <Badge className={`
-                                ${player.category === 'Bowler' ? 'bg-green-100 text-green-800' : ''}
-                                ${player.category === 'Batter' ? 'bg-blue-100 text-blue-800' : ''}
-                                ${player.category === 'All-Rounder' ? 'bg-purple-100 text-purple-800' : ''}
-                              `}>
-                                {player.category}
-                              </Badge>
-                              <span className="font-medium">{player.name}</span>
+                            <div className="flex items-center gap-3">
+                              <span className={`text-[10px] uppercase font-bold px-2 py-1 rounded-lg ${
+                                player.category === 'Bowler' ? 'cat-bowler' :
+                                player.category === 'Batter' ? 'cat-batter' : 'cat-allrounder'
+                              }`}>{player.category.charAt(0)}</span>
+                              <span className="font-medium text-sm text-[#1e293b]">{player.name}</span>
                             </div>
-                            <div className="flex items-center space-x-2">
-                              <span className="text-sm font-medium">{player.base_price} Cr</span>
-                              <Button 
-                                variant="ghost" 
-                                size="icon" 
-                                className="h-6 w-6"
-                                onClick={(e) => {
-                                  e.stopPropagation();
-                                  handleSelectPlayer(player);
-                                }}
-                              >
-                                <ArrowRight className="h-4 w-4 text-muted-foreground" />
-                              </Button>
+                            <div className="flex items-center gap-2">
+                              <span className="font-display font-bold text-sm text-[#334155]">{player.base_price}Cr</span>
+                              <ArrowRight className="h-4 w-4 text-[#93c5fd]" />
                             </div>
                           </div>
                         ))}
@@ -445,57 +442,63 @@ const AuctionRoom = () => {
                   ))}
                 </div>
               )}
-            </CardContent>
-          </Card>
-        </div>
-        
-        <div className="space-y-6">
-          <Leaderboard teams={teams} />
+            </div>
+          </div>
           
-          <Card>
-            <CardHeader className="pb-2">
-              <CardTitle className="flex items-center">
-                <Award className="h-5 w-5 mr-2" />
-                Team Rosters
-              </CardTitle>
-            </CardHeader>
-            <CardContent className="p-0">
-              <Tabs defaultValue={teamsWithPlayers[0]?.id || "empty"}>
-                <TabsList className="p-0 bg-transparent border-b w-full justify-start overflow-x-auto">
+          {/* Right Column: Leaderboard + Team Rosters (spanning 1 column) */}
+          <div className="space-y-6">
+            <div className="glass-card overflow-hidden">
+              <Leaderboard teams={teams} />
+            </div>
+
+            {recentlySoldPlayer && (
+              <RecentlySoldWidget 
+                player={recentlySoldPlayer} 
+                teams={teams} 
+                onBidUpdated={fetchAllData} 
+              />
+            )}
+            
+            <div className="glass-card overflow-hidden flex flex-col max-h-[600px]">
+              <div className="gradient-header px-4 py-3 flex items-center gap-2 flex-shrink-0">
+                <Award className="h-4 w-4 text-[#334155]" />
+                <h3 className="font-display font-bold text-sm text-[#1e293b]">Team Rosters</h3>
+              </div>
+              <div className="p-4 flex-1 overflow-y-auto no-scrollbar">
+                <Tabs defaultValue={teamsWithPlayers[0]?.id || "empty"}>
+                  <TabsList className="bg-transparent border-b border-white/30 w-full justify-start overflow-x-auto no-scrollbar h-auto pb-2 mb-4 rounded-none">
+                    {teamsWithPlayers.length === 0 ? (
+                      <TabsTrigger value="empty" disabled className="text-xs">No Teams</TabsTrigger>
+                    ) : (
+                      teamsWithPlayers.map((team) => (
+                        <TabsTrigger key={team.id} value={team.id} className="text-xs data-[state=active]:bg-white/50 rounded-xl px-3 py-1.5">
+                          {team.name}
+                        </TabsTrigger>
+                      ))
+                    )}
+                  </TabsList>
+                  
                   {teamsWithPlayers.length === 0 ? (
-                    <TabsTrigger value="empty" disabled>No Teams</TabsTrigger>
+                    <div className="text-center py-10">
+                      <Users className="h-8 w-8 mx-auto text-[#93c5fd] mb-3" />
+                      <p className="text-sm text-[#475569]">No teams available</p>
+                    </div>
                   ) : (
                     teamsWithPlayers.map((team) => (
-                      <TabsTrigger key={team.id} value={team.id} className="py-2">
-                        {team.name}
-                      </TabsTrigger>
+                      <TabsContent key={team.id} value={team.id} className="mt-0">
+                        <TeamCard team={team} initialPurse={50} showPlayers={true} onTeamUpdated={fetchAllData} />
+                      </TabsContent>
                     ))
                   )}
-                </TabsList>
-                
-                {teamsWithPlayers.length === 0 ? (
-                  <div className="p-4 text-center text-muted-foreground">
-                    <Users className="h-8 w-8 mx-auto mb-2" />
-                    <p>No teams available</p>
-                  </div>
-                ) : (
-                  teamsWithPlayers.map((team) => (
-                    <TabsContent key={team.id} value={team.id} className="pt-4">
-                      <TeamCard
-                        team={team}
-                        initialPurse={50}
-                        showPlayers={true}
-                        onTeamUpdated={fetchAllData}
-                      />
-                    </TabsContent>
-                  ))
-                )}
-              </Tabs>
-            </CardContent>
-          </Card>
+                </Tabs>
+              </div>
+            </div>
+          </div>
+          
         </div>
       </div>
-    </div>
+      </div>
+    </ErrorBoundary>
   );
 };
 

@@ -83,54 +83,52 @@ const TeamForm = ({ onTeamAdded, initialPurse, userId }: TeamFormProps) => {
   };
   
   return (
-    <Card>
-      <CardHeader>
-        <CardTitle className="flex items-center">
-          <PlusCircle className="h-5 w-5 mr-2" />
-          Add New Team
-        </CardTitle>
-      </CardHeader>
-      <CardContent>
-        <form onSubmit={handleAddTeam} className="space-y-4">
-          <div className="space-y-2">
-            <Label htmlFor="name">Team Name</Label>
-            <Input 
-              id="name" 
-              value={name} 
-              onChange={(e) => setName(e.target.value)} 
-              required 
-            />
-          </div>
-          
-          <div className="space-y-2">
-            <Label htmlFor="purse">Initial Purse (Cr)</Label>
-            <Input 
-              id="purse" 
-              type="number" 
-              min={0} 
-              step={0.5} 
-              value={purse}
-              onChange={(e) => setPurse(parseFloat(e.target.value))}
-              required 
-            />
-            <p className="text-xs text-muted-foreground">
-              Default purse for newly added teams
-            </p>
-          </div>
-          
-          <Button type="submit" className="w-full" disabled={submitting}>
-            {submitting ? (
-              <>
-                <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                Adding...
-              </>
-            ) : (
-              'Add Team'
-            )}
-          </Button>
-        </form>
-      </CardContent>
-    </Card>
+    <div className="space-y-4">
+      <div className="flex items-center text-[#1e293b] mb-2">
+        <PlusCircle className="h-5 w-5 mr-2 text-[#a78bfa]" />
+        <h2 className="font-display font-bold text-lg">Add New Team</h2>
+      </div>
+      <form onSubmit={handleAddTeam} className="space-y-4">
+        <div className="space-y-1.5">
+          <Label htmlFor="name" className="text-xs font-semibold text-[#334155]">Team Name</Label>
+          <Input 
+            id="name" 
+            value={name} 
+            onChange={(e) => setName(e.target.value)} 
+            className="glass-input rounded-xl h-10"
+            required 
+          />
+        </div>
+        
+        <div className="space-y-1.5">
+          <Label htmlFor="purse" className="text-xs font-semibold text-[#334155]">Initial Purse (Cr)</Label>
+          <Input 
+            id="purse" 
+            type="number" 
+            min={0} 
+            step={0.5} 
+            value={purse}
+            onChange={(e) => setPurse(parseFloat(e.target.value))}
+            className="glass-input rounded-xl h-10"
+            required 
+          />
+          <p className="text-[10px] text-[#475569]">
+            Default purse for newly added teams
+          </p>
+        </div>
+        
+        <Button type="submit" className="w-full primary-button" disabled={submitting}>
+          {submitting ? (
+            <>
+              <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+              Adding...
+            </>
+          ) : (
+            'Add Team'
+          )}
+        </Button>
+      </form>
+    </div>
   );
 };
 

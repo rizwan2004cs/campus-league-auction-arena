@@ -1,14 +1,23 @@
 
 import { useEffect, useState } from 'react';
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { useToast } from '@/hooks/use-toast';
 import { useRequireAuth } from '@/lib/auth';
 import { supabase } from '@/integrations/supabase/client';
-import { Loader2, Save, Settings as SettingsIcon } from 'lucide-react';
-import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
+import { Loader2, Save, Settings as SettingsIcon, AlertTriangle } from 'lucide-react';
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+  AlertDialogTrigger,
+} from "@/components/ui/alert-dialog";
 
 const Settings = () => {
   const { user, loading: authLoading } = useRequireAuth();
@@ -22,41 +31,20 @@ const Settings = () => {
   const [error, setError] = useState<string | null>(null);
   const [resetting, setResetting] = useState(false);
   
-  // Fetch settings
   const fetchSettings = async () => {
     try {
       setLoading(true);
       setError(null);
-      
-      const { data, error } = await supabase
-        .from('settings')
-        .select('*')
-        .limit(1);
-        
-      if (error) {
-        throw error;
-      }
-      
+      const { data, error } = await supabase.from('settings').select('*').limit(1);
+      if (error) throw error;
       if (data && data.length > 0) {
         setSettingsId(data[0].id);
         setPlayersPerTeam(data[0].players_per_team);
         setInitialPurse(data[0].initial_purse);
       } else {
-        // If no settings exist, create default
         const { data: newData, error: insertError } = await supabase
-          .from('settings')
-          .insert([
-            { 
-              players_per_team: 2, 
-              initial_purse: 50 
-            }
-          ])
-          .select();
-          
-        if (insertError) {
-          throw insertError;
-        }
-        
+          .from('settings').insert([{ players_per_team: 2, initial_purse: 50 }]).select();
+        if (insertError) throw insertError;
         if (newData && newData.length > 0) {
           setSettingsId(newData[0].id);
           setPlayersPerTeam(newData[0].players_per_team);
@@ -64,222 +52,154 @@ const Settings = () => {
         }
       }
     } catch (error: any) {
-      console.error('Error fetching settings:', error);
       setError(`Error fetching settings: ${error.message}`);
-      toast({
-        title: 'Error fetching settings',
-        description: error.message,
-        variant: 'destructive',
-      });
+      toast({ title: 'Error fetching settings', description: error.message, variant: 'destructive' });
     } finally {
       setLoading(false);
     }
   };
   
-  useEffect(() => {
-    if (!authLoading) {
-      fetchSettings();
-    }
-  }, [authLoading]);
+  useEffect(() => { if (!authLoading) fetchSettings(); }, [authLoading]);
   
-  // Save settings
   const handleSaveSettings = async (e: React.FormEvent) => {
     e.preventDefault();
-    
     try {
-      setSaving(true);
-      setError(null);
-      
+      setSaving(true); setError(null);
       if (!settingsId) {
-        // Create new settings
-        const { error } = await supabase
-          .from('settings')
-          .insert([
-            { 
-              players_per_team: playersPerTeam, 
-              initial_purse: initialPurse 
-            }
-          ]);
-          
-        if (error) {
-          throw error;
-        }
+        const { error } = await supabase.from('settings').insert([{ players_per_team: playersPerTeam, initial_purse: initialPurse }]);
+        if (error) throw error;
       } else {
-        // Update existing settings
-        const { error } = await supabase
-          .from('settings')
-          .update({ 
-            players_per_team: playersPerTeam, 
-            initial_purse: initialPurse 
-          })
-          .eq('id', settingsId);
-          
-        if (error) {
-          throw error;
-        }
+        const { error } = await supabase.from('settings').update({ players_per_team: playersPerTeam, initial_purse: initialPurse }).eq('id', settingsId);
+        if (error) throw error;
       }
-      
-      // Also update all teams to have the new initial purse
-      const { error: updateTeamsError } = await supabase
-        .from('teams')
-        .update({ purse: initialPurse })
-        .gte('id', '00000000-0000-0000-0000-000000000000');
-        
+      const { error: updateTeamsError } = await supabase.from('teams').update({ purse: initialPurse }).gte('id', '00000000-0000-0000-0000-000000000000');
       if (updateTeamsError) {
-        console.error('Error updating team purses:', updateTeamsError);
-        // Don't throw here, just show a warning
-        toast({
-          title: 'Warning',
-          description: 'Settings saved, but team purses could not be updated.',
-          variant: 'default',
-        });
+        toast({ title: 'Warning', description: 'Settings saved, but team purses could not be updated.' });
       } else {
-        toast({
-          title: 'Settings saved',
-          description: 'Auction settings have been updated and all team purses have been reset.',
-        });
+        toast({ title: 'Settings saved', description: 'Auction settings updated and team purses reset.' });
       }
-      
-      // Refresh settings to get the latest data
       fetchSettings();
     } catch (error: any) {
-      console.error('Error saving settings:', error);
       setError(`Error saving settings: ${error.message}`);
-      toast({
-        title: 'Error saving settings',
-        description: error.message,
-        variant: 'destructive',
-      });
+      toast({ title: 'Error saving settings', description: error.message, variant: 'destructive' });
     } finally {
       setSaving(false);
     }
   };
+
   const handleResetAuction = async () => {
-    const confirmed = window.confirm('This will release all players, clear team rosters, and reset all team purses to the initial value. Proceed?');
-    if (!confirmed) return;
     try {
       setResetting(true);
       const { data, error } = await supabase.functions.invoke('reset-auction', {
-        body: {}
+        body: {},
+        headers: {
+          Authorization: `Bearer ${import.meta.env.VITE_SUPABASE_ANON_KEY}`,
+        },
       });
       if (error) throw error;
       toast({ title: 'Auction reset', description: 'All players released and team purses reset.' });
-      // Reload page to refresh all data
       window.location.reload();
     } catch (err: any) {
-      console.error('Error resetting auction:', err);
-      toast({ title: 'Reset failed', description: err?.message || 'Failed to send a request to the Edge Function', variant: 'destructive' });
+      toast({
+        title: 'Reset failed',
+        description: err?.message || err?.context || 'Failed to reset',
+        variant: 'destructive',
+      });
     } finally {
       setResetting(false);
     }
   };
+
   if (authLoading || loading) {
     return (
-      <div className="flex justify-center items-center min-h-screen">
+      <div className="flex justify-center items-center h-full">
         <Loader2 className="h-8 w-8 animate-spin text-primary" />
-        <span className="ml-2">Loading settings...</span>
+        <span className="ml-2 text-[#475569]">Loading settings…</span>
       </div>
     );
   }
   
   return (
-    <div className="container mx-auto px-4 py-8 max-w-2xl">
-      <div className="mb-8">
-        <h1 className="text-3xl font-bold">Auction Settings</h1>
-        <p className="text-muted-foreground">Configure auction parameters</p>
-      </div>
-      
-      {error && (
-        <Alert variant="destructive" className="mb-6">
-          <AlertTitle>Error</AlertTitle>
-          <AlertDescription>{error}</AlertDescription>
-        </Alert>
-      )}
-      
-      <Card>
-        <CardHeader>
-          <CardTitle className="flex items-center">
-            <SettingsIcon className="h-5 w-5 mr-2" />
-            Auction Configuration
-          </CardTitle>
-          <CardDescription>
-            Adjust these settings to control the auction behavior
-          </CardDescription>
-        </CardHeader>
-        <CardContent>
-          <form onSubmit={handleSaveSettings} className="space-y-6">
-            <div className="space-y-2">
-              <Label htmlFor="playersPerTeam">Players Per Team (Per Category)</Label>
-              <Input 
-                id="playersPerTeam" 
-                type="number" 
-                min={1} 
-                max={10} 
-                value={playersPerTeam}
-                onChange={(e) => setPlayersPerTeam(parseInt(e.target.value))}
-                required 
-              />
-              <p className="text-xs text-muted-foreground">
-                Maximum number of players per category (Bowler, Batter, All-Rounder) that each team can have
-              </p>
+    <div className="h-full overflow-y-auto no-scrollbar">
+      <div className="max-w-xl mx-auto px-4 md:px-8 py-6 space-y-6">
+        <div>
+          <h1 className="page-header text-3xl">Settings</h1>
+          <p className="page-subtitle text-sm mt-1">Configure auction parameters</p>
+        </div>
+        
+        {error && (
+          <div className="glass-card p-4 border-red-300/40 flex items-start gap-3">
+            <AlertTriangle className="h-5 w-5 text-red-400 flex-shrink-0 mt-0.5" />
+            <p className="text-sm text-red-600">{error}</p>
+          </div>
+        )}
+        
+        {/* Configuration Card */}
+        <div className="glass-card p-6 space-y-6">
+          <div className="flex items-center gap-2.5">
+            <div className="w-9 h-9 rounded-xl bg-[#bae6fd]/50 flex items-center justify-center">
+              <SettingsIcon className="h-4.5 w-4.5 text-[#334155]" />
+            </div>
+            <div>
+              <h2 className="font-display font-bold text-[#1e293b]">Auction Configuration</h2>
+              <p className="text-xs text-[#475569]">Adjust these settings to control auction behavior</p>
+            </div>
+          </div>
+          
+          <form onSubmit={handleSaveSettings} className="space-y-5">
+            <div className="space-y-1.5">
+              <Label htmlFor="playersPerTeam" className="text-xs font-semibold text-[#334155]">Players Per Team (Per Category)</Label>
+              <Input id="playersPerTeam" type="number" min={1} max={10} value={playersPerTeam} onChange={(e) => setPlayersPerTeam(parseInt(e.target.value))} className="glass-input rounded-xl h-11" required />
+              <p className="text-[11px] text-[#475569]">Maximum players per category each team can have</p>
             </div>
             
-            <div className="space-y-2">
-              <Label htmlFor="initialPurse">Initial Purse (Cr)</Label>
-              <Input 
-                id="initialPurse" 
-                type="number" 
-                min={1} 
-                step={0.5} 
-                value={initialPurse}
-                onChange={(e) => setInitialPurse(parseFloat(e.target.value))}
-                required 
-              />
-              <p className="text-xs text-muted-foreground">
-                Starting purse amount for new teams (in Crores)
-              </p>
+            <div className="space-y-1.5">
+              <Label htmlFor="initialPurse" className="text-xs font-semibold text-[#334155]">Initial Purse (Cr)</Label>
+              <Input id="initialPurse" type="number" min={1} step={0.5} value={initialPurse} onChange={(e) => setInitialPurse(parseFloat(e.target.value))} className="glass-input rounded-xl h-11" required />
+              <p className="text-[11px] text-[#475569]">Starting purse for new teams (in Crores)</p>
             </div>
             
-            <Button type="submit" className="w-full" disabled={saving}>
-              {saving ? (
-                <>
-                  <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                  Saving...
-                </>
-              ) : (
-                <>
-                  <Save className="mr-2 h-4 w-4" />
-                  Save Settings
-                </>
-              )}
+            <Button type="submit" className="w-full primary-button h-11" disabled={saving}>
+              {saving ? (<><Loader2 className="mr-2 h-4 w-4 animate-spin" />Saving…</>) : (<><Save className="mr-2 h-4 w-4" />Save Settings</>)}
             </Button>
           </form>
-        </CardContent>
-      </Card>
-      
-      <Card className="mt-8 border-destructive/30">
-        <CardHeader>
-          <CardTitle>Danger Zone</CardTitle>
-          <CardDescription>Reset the entire auction: releases all players and restores team purses.</CardDescription>
-        </CardHeader>
-        <CardContent>
-          <Button variant="destructive" className="w-full" onClick={handleResetAuction} disabled={resetting}>
-            {resetting ? (
-              <>
-                <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                Resetting...
-              </>
-            ) : (
-              'Reset Auction'
-            )}
-          </Button>
-          <p className="mt-2 text-xs text-muted-foreground">This action cannot be undone.</p>
-        </CardContent>
-      </Card>
-      
-      <div className="mt-8 text-center text-sm text-muted-foreground">
-        <p>Note: Changing these settings will affect future auctions only.</p>
-        <p>To update existing teams' purses, use the Team Management page.</p>
+        </div>
+        
+        {/* Danger Zone */}
+        <div className="glass-card p-6 border-red-300/30">
+          <h2 className="font-display font-bold text-[#1e293b] mb-1">Danger Zone</h2>
+          <p className="text-xs text-[#475569] mb-4">Reset the entire auction: releases all players and restores team purses.</p>
+          
+          <AlertDialog>
+            <AlertDialogTrigger asChild>
+              <Button 
+                variant="destructive" 
+                className="w-full rounded-xl h-11 font-semibold" 
+                disabled={resetting}
+              >
+                {resetting ? (<><Loader2 className="mr-2 h-4 w-4 animate-spin" />Resetting…</>) : 'Reset Auction'}
+              </Button>
+            </AlertDialogTrigger>
+            <AlertDialogContent className="glass-dialog">
+              <AlertDialogHeader>
+                <AlertDialogTitle className="font-display">Reset Auction</AlertDialogTitle>
+                <AlertDialogDescription>
+                  This will release all players, clear team rosters, and reset all team purses. Proceed?
+                </AlertDialogDescription>
+              </AlertDialogHeader>
+              <AlertDialogFooter>
+                <AlertDialogCancel className="rounded-xl">Cancel</AlertDialogCancel>
+                <AlertDialogAction onClick={handleResetAuction} className="rounded-xl bg-red-500 hover:bg-red-600">Proceed</AlertDialogAction>
+              </AlertDialogFooter>
+            </AlertDialogContent>
+          </AlertDialog>
+
+          <p className="mt-2 text-[10px] text-[#475569] text-center">This action cannot be undone.</p>
+        </div>
+        
+        <p className="text-center text-[11px] text-[#475569] pb-4">
+          Note: Changes affect future auctions. Use Team Management to update existing purses.
+        </p>
       </div>
     </div>
   );
