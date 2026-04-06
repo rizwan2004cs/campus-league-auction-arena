@@ -105,14 +105,6 @@ const Login = () => {
                   : (isSignUp ? 'Create Account' : 'Login')
                 }
               </Button>
-              <Button 
-                type="button" 
-                variant="ghost" 
-                className="w-full" 
-                onClick={() => setIsSignUp(!isSignUp)}
-              >
-                {isSignUp ? 'Already have an account? Login' : "Don't have an account? Sign up"}
-              </Button>
             </CardFooter>
           </form>
         </Card>
