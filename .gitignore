@@ -31,3 +31,7 @@ dist-ssr
 .taste-skill/
 skills-lock.json
 supabase/.temp/
+
+# Local secrets
+.env
+.env.local

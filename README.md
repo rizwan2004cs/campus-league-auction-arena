@@ -1,73 +1,68 @@
-# Welcome to your Lovable project
+# Campus Premier League · Player Auction
 
-## Project info
+A live, IPL-style player auction for a college cricket league. The organiser runs the auction on a laptop that is also on the big screen; everyone else follows on their phones.
 
-**URL**: https://lovable.dev/projects/8a57fdf0-e2a1-4875-8b33-e614b2c8e1f9
+- **Auction room**: player on the block, one-tap bidder selection, atomic bids, SOLD celebration, last-sale correction, squad board
+- **Live for spectators** (`/public`): podium standings, rosters, searchable player catalogue, LED ticker of sales
+- **Telugu commentary**: every sold, unsold, released or corrected player gets an AI one-liner, pushed to every phone
+- **Players and teams**: add players with photos, set purses and squad limits
 
-## How can I edit this code?
+Live: https://campus-league-auction-arena.vercel.app
 
-There are several ways of editing your application.
+**Stack**: Vite, React, TypeScript, Tailwind · Supabase (Postgres, Auth, Storage, Realtime) · Vercel (hosting, serverless functions, cron) · Groq (commentary)
 
-**Use Lovable**
+---
 
-Simply visit the [Lovable Project](https://lovable.dev/projects/8a57fdf0-e2a1-4875-8b33-e614b2c8e1f9) and start prompting.
+## Deploy your own
 
-Changes made via Lovable will be committed automatically to this repo.
+Your copy gets its **own** database. It starts with the same 87 players and 7 franchises as the original (all unsold, full purses); change or delete them from the Players and Teams pages.
 
-**Use your preferred IDE**
+### 1. Create the database
 
-If you want to work locally using your own IDE, you can clone this repo and push changes. Pushed changes will also be reflected in Lovable.
+1. Create a free project at [supabase.com](https://supabase.com).
+2. Install the [Supabase CLI](https://supabase.com/docs/guides/cli), then from this folder:
 
-The only requirement is having Node.js & npm installed - [install with nvm](https://github.com/nvm-sh/nvm#installing-and-updating)
+   ```bash
+   supabase login
+   supabase link --project-ref <your-project-ref>
+   supabase db push                                  # creates tables, bidding functions, security rules, photo bucket
+   supabase db query --linked -f supabase/seed.sql   # loads the starting players, teams and settings
+   supabase functions deploy reset-auction           # the "reset auction" button in Settings
+   ```
 
-Follow these steps:
+3. In the Supabase dashboard, open **Authentication → Users → Add user** and create the organiser's email and password. (Turn off public sign-ups under **Authentication → Sign In / Providers** so nobody else can register.) The first time the organiser signs in, they take ownership of the seeded teams.
 
-```sh
-# Step 1: Clone the repository using the project's Git URL.
-git clone <YOUR_GIT_URL>
+### 2. Deploy the site
 
-# Step 2: Navigate to the project directory.
-cd <YOUR_PROJECT_NAME>
+[![Deploy with Vercel](https://vercel.com/button)](https://vercel.com/new/clone?repository-url=https%3A%2F%2Fgithub.com%2Frizwan2004cs%2Fcampus-league-auction-arena&env=VITE_SUPABASE_URL,VITE_SUPABASE_ANON_KEY,SUPABASE_URL,SUPABASE_ANON_KEY,GROQ_API_KEY&envDescription=Supabase%20URL%20and%20anon%20key%20(twice%3A%20browser%20and%20server)%2C%20plus%20a%20Groq%20API%20key%20for%20commentary&project-name=campus-league-auction)
 
-# Step 3: Install the necessary dependencies.
-npm i
+The button forks the repo into your GitHub and asks for these values (Supabase → **Project Settings → API**):
 
-# Step 4: Start the development server with auto-reloading and an instant preview.
+| Variable | Value |
+| --- | --- |
+| `VITE_SUPABASE_URL` / `SUPABASE_URL` | your project URL, e.g. `https://abcd.supabase.co` |
+| `VITE_SUPABASE_ANON_KEY` / `SUPABASE_ANON_KEY` | your anon (publishable) key |
+| `GROQ_API_KEY` | a key from [console.groq.com](https://console.groq.com). Optional: without it, commentary falls back to plain text |
+
+Every push to `main` then redeploys production, and pull requests get preview links.
+
+### Run it locally
+
+```bash
+cp .env.example .env    # fill in VITE_SUPABASE_URL and VITE_SUPABASE_ANON_KEY
+npm install
 npm run dev
 ```
 
-**Edit a file directly in GitHub**
+AI commentary runs as a Vercel function, so locally it uses the plain-text fallback unless you run `vercel dev`.
 
-- Navigate to the desired file(s).
-- Click the "Edit" button (pencil icon) at the top right of the file view.
-- Make your changes and commit the changes.
+---
 
-**Use GitHub Codespaces**
+## How it fits together
 
-- Navigate to the main page of your repository.
-- Click on the "Code" button (green button) near the top right.
-- Select the "Codespaces" tab.
-- Click on "New codespace" to launch a new Codespace environment.
-- Edit files directly within the Codespace and commit and push your changes once you're done.
-
-## What technologies are used for this project?
-
-This project is built with:
-
-- Vite
-- TypeScript
-- React
-- shadcn-ui
-- Tailwind CSS
-
-## How can I deploy this project?
-
-Simply open [Lovable](https://lovable.dev/projects/8a57fdf0-e2a1-4875-8b33-e614b2c8e1f9) and click on Share -> Publish.
-
-## Can I connect a custom domain to my Lovable project?
-
-Yes, you can!
-
-To connect a domain, navigate to Project > Settings > Domains and click Connect Domain.
-
-Read more here: [Setting up a custom domain](https://docs.lovable.dev/tips-tricks/custom-domain#step-by-step-guide)
+- `src/pages`: Landing (`/`), Login, Players, Teams, Auction, Summary, Settings, Public view
+- `api/commentary.ts`: server-side Groq call (the key never reaches the browser), with a model fallback
+- `api/cron/keep-alive.ts`: runs every 3 days so a free Supabase project never pauses
+- `supabase/migrations`: the schema; `place_bid` / `release_player` move purse, points and roster in one locked transaction
+- `supabase/seed.sql`: starting players, teams and settings
+- `.github/workflows/ci.yml`: typecheck, build and API bundle check on every push and pull request
