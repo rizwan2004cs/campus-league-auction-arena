@@ -1,0 +1,39 @@
+# Checks every push and pull request. Deploys are handled by the Vercel Git
+# integration: pull requests and branches get preview URLs, main goes to production.
+name: CI
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+
+concurrency:
+  group: ci-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+
+      - name: Install
+        run: npm ci
+
+      - name: Typecheck
+        run: npx tsc --noEmit -p tsconfig.app.json
+
+      - name: Build
+        run: npm run build
+
+      - name: Bundle the serverless functions
+        # Catches import mistakes in api/ before Vercel does (e.g. missing .js extensions under ESM).
+        run: |
+          npx esbuild api/commentary.ts api/cron/keep-alive.ts \
+            --bundle --platform=node --format=esm --outdir=/tmp/api-check --log-level=warning

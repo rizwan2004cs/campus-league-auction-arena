@@ -84,13 +84,13 @@ const TeamForm = ({ onTeamAdded, initialPurse, userId }: TeamFormProps) => {
   
   return (
     <div className="space-y-4">
-      <div className="flex items-center text-[#1e293b] mb-2">
-        <PlusCircle className="h-5 w-5 mr-2 text-[#a78bfa]" />
+      <div className="flex items-center text-ink mb-2">
+        <PlusCircle className="h-5 w-5 mr-2 text-tan" />
         <h2 className="font-display font-bold text-lg">Add New Team</h2>
       </div>
       <form onSubmit={handleAddTeam} className="space-y-4">
         <div className="space-y-1.5">
-          <Label htmlFor="name" className="text-xs font-semibold text-[#334155]">Team Name</Label>
+          <Label htmlFor="name" className="text-xs font-semibold text-ink">Team Name</Label>
           <Input 
             id="name" 
             value={name} 
@@ -101,7 +101,7 @@ const TeamForm = ({ onTeamAdded, initialPurse, userId }: TeamFormProps) => {
         </div>
         
         <div className="space-y-1.5">
-          <Label htmlFor="purse" className="text-xs font-semibold text-[#334155]">Initial Purse (Cr)</Label>
+          <Label htmlFor="purse" className="text-xs font-semibold text-ink">Initial Purse (Cr)</Label>
           <Input 
             id="purse" 
             type="number" 
@@ -112,7 +112,7 @@ const TeamForm = ({ onTeamAdded, initialPurse, userId }: TeamFormProps) => {
             className="glass-input rounded-xl h-10"
             required 
           />
-          <p className="text-[10px] text-[#475569]">
+          <p className="text-[10px] text-soft">
             Default purse for newly added teams
           </p>
         </div>

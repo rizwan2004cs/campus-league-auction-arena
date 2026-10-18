@@ -37,13 +37,13 @@ const TeamManagement = () => {
     return (
       <div className="flex justify-center items-center h-full">
         <Loader2 className="h-8 w-8 animate-spin text-primary" />
-        <span className="ml-2 text-[#475569]">Loading…</span>
+        <span className="ml-2 text-soft">Loading…</span>
       </div>
     );
   }
   
   return (
-    <div className="h-full overflow-y-auto no-scrollbar">
+    <div className="">
       <div className="max-w-7xl mx-auto px-4 md:px-8 py-6 space-y-6">
         <div>
           <h1 className="page-header text-3xl">Team Management</h1>

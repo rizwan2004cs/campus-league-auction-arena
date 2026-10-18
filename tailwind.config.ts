@@ -62,25 +62,27 @@ export default {
           border: 'hsl(var(--sidebar-border))',
           ring: 'hsl(var(--sidebar-ring))'
         },
-        cpl: {
-          indigo: '#6366F1',
-          purple: '#8B5CF6',
-          lightPurple: '#D6BCFA',
-          red: '#EF4444',
-          green: '#10B981',
-        },
+        // Walnut and tan: leather and willow. Flat fields only.
+        stage: 'var(--c-stage)',
+        surface: 'var(--c-surface)',
+        raised: 'var(--c-raised)',
+        line: 'var(--c-line)',
+        ink: 'var(--c-ink)',
+        soft: 'var(--c-soft)',
+        tan: { DEFAULT: 'var(--c-tan)', ink: 'var(--c-tan-ink)' },
+        willow: 'var(--c-willow)',
+        leather: 'var(--c-leather)',
+        outfield: 'var(--c-outfield)',
+        coral: 'var(--c-coral)',
+      },
+      fontFamily: {
+        display: ['Unbounded', 'Arial Black', 'sans-serif'],
+        sans: ['Rubik', 'system-ui', '-apple-system', 'sans-serif'],
       },
       borderRadius: {
         lg: 'var(--radius)',
         md: 'calc(var(--radius) - 2px)',
         sm: 'calc(var(--radius) - 4px)'
-      },
-      backgroundImage: {
-        'gradient-cool': 'linear-gradient(90deg, #e5effc 0%, #adccef 100%)',
-        'gradient-bright': 'linear-gradient(90deg, #02effe 0%, #4caefe 100%)',
-        'gradient-azure': 'linear-gradient(90deg, #00c2fa 0%, #005fea 100%)',
-        'gradient-royal': 'linear-gradient(90deg, #49c5ef 0%, #5b6fd4 100%)',
-        'gradient-soft': 'linear-gradient(90deg, #d4e1e4 0%, #a3b4d4 100%)',
       },
       keyframes: {
         'accordion-down': {
@@ -102,12 +104,17 @@ export default {
         'pulse-light': {
           '0%, 100%': { opacity: '1' },
           '50%': { opacity: '0.8' }
+        },
+        shimmer: {
+          from: { backgroundPosition: '200% 0' },
+          to: { backgroundPosition: '-200% 0' }
         }
       },
       animation: {
         'accordion-down': 'accordion-down 0.2s ease-out',
         'accordion-up': 'accordion-up 0.2s ease-out',
         'pulse-light': 'pulse-light 2s cubic-bezier(0.4, 0, 0.6, 1) infinite',
+        shimmer: 'shimmer 1.6s linear infinite',
       }
     }
   },

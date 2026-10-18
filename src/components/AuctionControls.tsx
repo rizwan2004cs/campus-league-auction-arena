@@ -140,37 +140,47 @@ const AuctionControls = ({
 
   return (
     <div className="w-full">
-      <h3 className="font-display font-bold text-sm text-[#1e293b] mb-3">Auction Controls</h3>
-      
-      <div className="space-y-3">
-        <div className="space-y-1.5">
-          <Label htmlFor="team-select" className="text-xs font-semibold text-[#334155]">Select Team</Label>
-          <Select 
-            value={selectedTeamId} 
-            onValueChange={setSelectedTeamId}
-            disabled={bidLoading || loading}
-          >
-            <SelectTrigger id="team-select" className="w-full glass-input rounded-xl h-10">
-              <SelectValue placeholder="Select team to bid" />
-            </SelectTrigger>
-            <SelectContent className="glass-card border-0">
-              {eligibleTeams.length === 0 ? (
-                <SelectItem value="no-teams" disabled>
-                  No eligible teams
-                </SelectItem>
-              ) : (
-                eligibleTeams.map(team => (
-                  <SelectItem key={team.id} value={team.id}>
-                    {team.name} - {team.purse} Cr
-                  </SelectItem>
-                ))
-              )}
-            </SelectContent>
-          </Select>
-        </div>
+      <div className="mb-3 flex items-baseline justify-between gap-3">
+        <h3 className="font-display text-base text-ink">Who's bidding?</h3>
+        <span className="dot-label text-[11px] text-soft">
+          <span className="dot text-[15px] text-ink">{eligibleTeams.length}</span> can afford
+        </span>
+      </div>
+
+      <div className="space-y-4">
+        {/* Every team that can still buy this player, one tap to pick the bidder. */}
+        {eligibleTeams.length === 0 ? (
+          <p className="rounded-xl bg-raised p-3 text-sm text-ink">
+            No franchise can afford this player or has a slot left. Pass them.
+          </p>
+        ) : (
+          <div role="radiogroup" aria-label="Bidding team" className="grid grid-cols-2 gap-2">
+            {eligibleTeams.map(team => {
+              const picked = selectedTeamId === team.id;
+              return (
+                <button
+                  key={team.id}
+                  type="button"
+                  role="radio"
+                  aria-checked={picked}
+                  disabled={bidLoading || loading}
+                  onClick={() => setSelectedTeamId(picked ? '' : team.id)}
+                  className={`flex min-w-0 flex-col items-start rounded-xl border px-3 py-2 text-left transition-colors disabled:opacity-50 ${
+                    picked ? 'border-tan bg-tan text-white' : 'border-line bg-surface text-ink hover:border-tan/50'
+                  }`}
+                >
+                  <span className="w-full truncate text-sm font-semibold">{team.name}</span>
+                  <span className={`text-xs ${picked ? 'text-white/85' : 'text-soft'}`}>
+                    <span className="dot text-[13px]">{team.purse}</span> Cr left
+                  </span>
+                </button>
+              );
+            })}
+          </div>
+        )}
         
         <div className="space-y-1.5">
-          <Label htmlFor="bid-amount" className="text-xs font-semibold text-[#334155]">Bid Amount (Cr)</Label>
+          <Label htmlFor="bid-amount" className="text-xs font-semibold text-ink">Bid Amount (Cr)</Label>
           <Input
             id="bid-amount"
             type="number"
@@ -182,14 +192,14 @@ const AuctionControls = ({
             className={`glass-input rounded-xl h-10 ${error ? "border-red-500" : ""}`}
             disabled={bidLoading || loading}
           />
-          <p className="text-[10px] text-[#475569]">
+          <p className="text-[10px] text-soft">
             Minimum bid: {player.base_price} Cr
             {selectedTeam && ` | Maximum bid: ${selectedTeam.purse} Cr`}
           </p>
         </div>
         
         {error && (
-          <Alert variant="destructive" className="py-2 bg-red-50/50 backdrop-blur-sm border-red-200">
+          <Alert variant="destructive" className="py-2 bg-red-50/50 border-red-200">
             <AlertCircle className="h-4 w-4" />
             <AlertDescription className="text-xs">
               {error}
@@ -220,7 +230,7 @@ const AuctionControls = ({
               {onPassPlayer && (
                 <Button
                   variant="outline"
-                  className="w-full rounded-xl border-[#94a3b8]/30 hover:bg-[#f1f5f9] text-[#475569] hover:text-[#334155]"
+                  className="w-full rounded-xl border-line hover:bg-line text-soft hover:text-ink"
                   onClick={() => onPassPlayer(player.id)}
                   disabled={loading || bidLoading}
                 >

@@ -114,13 +114,13 @@ const Settings = () => {
     return (
       <div className="flex justify-center items-center h-full">
         <Loader2 className="h-8 w-8 animate-spin text-primary" />
-        <span className="ml-2 text-[#475569]">Loading settings…</span>
+        <span className="ml-2 text-soft">Loading settings…</span>
       </div>
     );
   }
   
   return (
-    <div className="h-full overflow-y-auto no-scrollbar">
+    <div className="">
       <div className="max-w-xl mx-auto px-4 md:px-8 py-6 space-y-6">
         <div>
           <h1 className="page-header text-3xl">Settings</h1>
@@ -129,7 +129,7 @@ const Settings = () => {
         
         {error && (
           <div className="glass-card p-4 border-red-300/40 flex items-start gap-3">
-            <AlertTriangle className="h-5 w-5 text-red-400 flex-shrink-0 mt-0.5" />
+            <AlertTriangle className="h-5 w-5 text-leather flex-shrink-0 mt-0.5" />
             <p className="text-sm text-red-600">{error}</p>
           </div>
         )}
@@ -137,26 +137,26 @@ const Settings = () => {
         {/* Configuration Card */}
         <div className="glass-card p-6 space-y-6">
           <div className="flex items-center gap-2.5">
-            <div className="w-9 h-9 rounded-xl bg-[#bae6fd]/50 flex items-center justify-center">
-              <SettingsIcon className="h-4.5 w-4.5 text-[#334155]" />
+            <div className="w-9 h-9 rounded-xl bg-raised flex items-center justify-center">
+              <SettingsIcon className="h-4.5 w-4.5 text-ink" />
             </div>
             <div>
-              <h2 className="font-display font-bold text-[#1e293b]">Auction Configuration</h2>
-              <p className="text-xs text-[#475569]">Adjust these settings to control auction behavior</p>
+              <h2 className="font-display font-bold text-ink">Auction Configuration</h2>
+              <p className="text-xs text-soft">Adjust these settings to control auction behavior</p>
             </div>
           </div>
           
           <form onSubmit={handleSaveSettings} className="space-y-5">
             <div className="space-y-1.5">
-              <Label htmlFor="playersPerTeam" className="text-xs font-semibold text-[#334155]">Players Per Team (Per Category)</Label>
+              <Label htmlFor="playersPerTeam" className="text-xs font-semibold text-ink">Players Per Team (Per Category)</Label>
               <Input id="playersPerTeam" type="number" min={1} max={10} value={playersPerTeam} onChange={(e) => setPlayersPerTeam(parseInt(e.target.value))} className="glass-input rounded-xl h-11" required />
-              <p className="text-[11px] text-[#475569]">Maximum players per category each team can have</p>
+              <p className="text-[11px] text-soft">Maximum players per category each team can have</p>
             </div>
             
             <div className="space-y-1.5">
-              <Label htmlFor="initialPurse" className="text-xs font-semibold text-[#334155]">Initial Purse (Cr)</Label>
+              <Label htmlFor="initialPurse" className="text-xs font-semibold text-ink">Initial Purse (Cr)</Label>
               <Input id="initialPurse" type="number" min={1} step={0.5} value={initialPurse} onChange={(e) => setInitialPurse(parseFloat(e.target.value))} className="glass-input rounded-xl h-11" required />
-              <p className="text-[11px] text-[#475569]">Starting purse for new teams (in Crores)</p>
+              <p className="text-[11px] text-soft">Starting purse for new teams (in Crores)</p>
             </div>
             
             <Button type="submit" className="w-full primary-button h-11" disabled={saving}>
@@ -167,8 +167,8 @@ const Settings = () => {
         
         {/* Danger Zone */}
         <div className="glass-card p-6 border-red-300/30">
-          <h2 className="font-display font-bold text-[#1e293b] mb-1">Danger Zone</h2>
-          <p className="text-xs text-[#475569] mb-4">Reset the entire auction: releases all players and restores team purses.</p>
+          <h2 className="font-display font-bold text-ink mb-1">Danger Zone</h2>
+          <p className="text-xs text-soft mb-4">Reset the entire auction: releases all players and restores team purses.</p>
           
           <AlertDialog>
             <AlertDialogTrigger asChild>
@@ -194,10 +194,10 @@ const Settings = () => {
             </AlertDialogContent>
           </AlertDialog>
 
-          <p className="mt-2 text-[10px] text-[#475569] text-center">This action cannot be undone.</p>
+          <p className="mt-2 text-[10px] text-soft text-center">This action cannot be undone.</p>
         </div>
         
-        <p className="text-center text-[11px] text-[#475569] pb-4">
+        <p className="text-center text-[11px] text-soft pb-4">
           Note: Changes affect future auctions. Use Team Management to update existing purses.
         </p>
       </div>

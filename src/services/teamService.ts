@@ -314,164 +314,24 @@ export const modifyPlayerBid = async (
   }
 ): Promise<{ success: boolean; error: Error | null }> => {
   try {
-    console.log('🔧 Starting modifyPlayerBid:', { playerId, updates });
-    
-    // Get current player data
-    const { data: playerData, error: fetchError } = await supabase
-      .from('players')
-      .select('*')
-      .eq('id', playerId)
-      .single();
-    
-    console.log('📊 Current player data:', playerData);
-      
-    if (fetchError) {
-      console.error('❌ Error fetching player:', fetchError);
-      throw fetchError;
-    }
-    
-    // If player was previously sold, restore purse to old team
-    if (playerData.team_id && playerData.sold_price) {
-      // Get current team data and calculate new values
-      const { data: currentTeamData, error: getTeamError } = await supabase
-        .from('teams')
-        .select('purse, points')
-        .eq('id', playerData.team_id)
-        .single();
-        
-      if (getTeamError) {
-        throw getTeamError;
-      }
-      
-      const { error: restorePurseError } = await supabase
-        .from('teams')
-        .update({ 
-          purse: currentTeamData.purse + playerData.sold_price,
-          points: currentTeamData.points - playerData.points
+    // Both paths run as one transaction in Postgres (see migration
+    // 20261018120000_atomic_bids_and_realtime.sql): the previous team is
+    // refunded, purse and category limits are checked under row locks.
+    const { error } = updates.sold && updates.sold_to && updates.bid_price
+      ? await supabase.rpc('place_bid', {
+          p_player_id: playerId,
+          p_team_id: updates.sold_to,
+          p_price: updates.bid_price,
         })
-        .eq('id', playerData.team_id);
-        
-      if (restorePurseError) {
-        throw restorePurseError;
-      }
-    }
-    
-    // If selling to new team
-    if (updates.sold && updates.sold_to && updates.bid_price) {
-      console.log('💰 Processing new bid for team:', updates.sold_to);
-      
-      // Get current team data and calculate new values
-      const { data: currentTeamData, error: getTeamError } = await supabase
-        .from('teams')
-        .select('purse, points')
-        .eq('id', updates.sold_to)
-        .single();
-      
-      console.log('🏆 Team data before bid:', currentTeamData);
-        
-      if (getTeamError) {
-        console.error('❌ Error fetching team:', getTeamError);
-        throw getTeamError;
-      }
-      
-      if (currentTeamData.purse < updates.bid_price) {
-        console.error('💸 Insufficient purse:', { purse: currentTeamData.purse, bid: updates.bid_price });
-        return { 
-          success: false, 
-          error: new Error(`Team doesn't have enough purse (${currentTeamData.purse} Cr) for this bid (${updates.bid_price} Cr)`) 
-        };
-      }
-      
-      // Update team purse and points
-      console.log('🔄 Updating team purse and points...');
-      const newPurse = currentTeamData.purse - updates.bid_price;
-      const newPoints = currentTeamData.points + playerData.points;
-      
-      const { error: updateTeamError } = await supabase
-        .from('teams')
-        .update({ 
-          purse: newPurse,
-          points: newPoints
-        })
-        .eq('id', updates.sold_to);
-        
-      if (updateTeamError) {
-        console.error('❌ Error updating team:', updateTeamError);
-        throw updateTeamError;
-      }
-      
-      console.log('✅ Team updated successfully:', { newPurse, newPoints });
-      
-      // Update player
-      console.log('🔄 Updating player...');
-      const { error: updatePlayerError } = await supabase
-        .from('players')
-        .update({
-          team_id: updates.sold_to,
-          sold_price: updates.bid_price,
-          sold: true,
-          sold_to: updates.sold_to
-        })
-        .eq('id', playerId);
-        
-      if (updatePlayerError) {
-        console.error('❌ Error updating player:', updatePlayerError);
-        throw updatePlayerError;
-      }
-      
-      console.log('✅ Player updated successfully');
+      : await supabase.rpc('release_player', { p_player_id: playerId });
 
-      // Add to team_players table
-      console.log('🔄 Adding to team_players...');
-      
-      // Clean up any existing records for this player first to prevent duplicates
-      await supabase.from('team_players').delete().eq('player_id', playerId);
-      
-      const { error: addTeamPlayerError } = await supabase
-        .from('team_players')
-        .insert({
-          team_id: updates.sold_to,
-          player_id: playerId,
-          bid_price: updates.bid_price
-        });
-        
-      if (addTeamPlayerError) {
-        console.error('❌ Error adding to team_players:', addTeamPlayerError);
-        throw addTeamPlayerError;
-      }
-      
-      console.log('✅ Added to team_players successfully');
-        
-      if (updatePlayerError) {
-        throw updatePlayerError;
-      }
-    } else {
-      // Reset player (unsold)
-      const { error: updatePlayerError } = await supabase
-        .from('players')
-        .update({
-          team_id: null,
-          sold_price: null,
-          sold: false,
-          sold_to: null
-        })
-        .eq('id', playerId);
-
-      // Remove from team_players table
-      const { error: removeTeamPlayerError } = await supabase
-        .from('team_players')
-        .delete()
-        .eq('player_id', playerId);
-        
-      if (updatePlayerError) {
-        throw updatePlayerError;
-      }
+    if (error) {
+      throw new Error(error.message);
     }
-    
-    console.log('✨ modifyPlayerBid completed successfully');
+
     return { success: true, error: null };
   } catch (error: any) {
-    console.error('💥 Error in modifyPlayerBid:', error);
+    console.error('Error in modifyPlayerBid:', error);
     return { success: false, error };
   }
 };

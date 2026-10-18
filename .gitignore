@@ -22,3 +22,12 @@ dist-ssr
 *.njsproj
 *.sln
 *.sw?
+.vercel
+
+# Local tooling, not part of the app
+.agents/
+.claude/
+.impeccable/
+.taste-skill/
+skills-lock.json
+supabase/.temp/

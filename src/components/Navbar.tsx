@@ -1,119 +1,83 @@
-
-import { Link, useLocation } from 'react-router-dom';
-import { LogOut, Menu, X } from 'lucide-react';
-import { Button } from '@/components/ui/button';
+import { Link, NavLink } from 'react-router-dom';
+import { ExternalLink, LogOut, Menu, X } from 'lucide-react';
 import { useState } from 'react';
 import { useAuth } from '@/lib/auth';
+import { cn } from '@/lib/utils';
+
+const navLinks = [
+  { path: '/dashboard', label: 'Players' },
+  { path: '/teams', label: 'Teams' },
+  { path: '/auction', label: 'Auction' },
+  { path: '/summary', label: 'Summary' },
+  { path: '/settings', label: 'Settings' },
+];
+
+const linkClass = ({ isActive }: { isActive: boolean }) =>
+  cn(
+    'rounded-lg px-3 py-2 text-[15px] transition-colors',
+    isActive ? 'bg-raised font-semibold text-ink' : 'text-soft hover:bg-raised hover:text-ink',
+  );
 
 const Navbar = () => {
   const [isMenuOpen, setIsMenuOpen] = useState(false);
   const { user, logout } = useAuth();
-  const location = useLocation();
-  
-  const isActive = (path: string) => location.pathname === path;
-  
-  const navLinks = [
-    { path: '/dashboard', label: 'Players' },
-    { path: '/teams', label: 'Teams' },
-    { path: '/auction', label: 'Auction' },
-    { path: '/settings', label: 'Settings' },
-  ];
-  
-  const toggleMenu = () => setIsMenuOpen(!isMenuOpen);
-  
+
   if (!user) return null;
-  
+
   return (
-    <div className="pt-3 px-4 sticky top-0 z-50">
-      <header className="glass-nav rounded-2xl md:rounded-full mx-auto max-w-5xl">
-        <div className="px-5 md:px-8">
-          <div className="flex items-center justify-between h-14">
-            <Link to="/dashboard" className="flex items-center gap-2 group">
-              <div className="w-8 h-8 rounded-xl overflow-hidden shadow-md group-hover:shadow-lg transition-shadow">
-                <img src="/icons/logo.png" alt="Campus League" className="w-full h-full object-contain" />
-              </div>
-              <span className="text-lg font-display font-extrabold tracking-tight text-[#1e293b]">
-                Campus League
-              </span>
-            </Link>
-            
-            {/* Desktop navigation */}
-            <nav className="hidden md:flex items-center gap-1">
-              {navLinks.map(({ path, label }) => (
-                <Link
-                  key={path}
-                  to={path}
-                  className={`px-3.5 py-1.5 rounded-full text-sm font-medium transition-all duration-200 ${
-                    isActive(path) 
-                      ? 'bg-white/60 text-[#1e293b] shadow-sm font-bold' 
-                      : 'text-[#334155] hover:text-[#1e293b] hover:bg-white/30'
-                  }`}
-                >
-                  {label}
-                </Link>
-              ))}
-              
-              <div className="w-px h-6 bg-[#c8b0ff]/30 mx-2" />
-              
-              <Button 
-                variant="ghost" 
-                size="sm"
-                className="text-[#334155] hover:bg-white/30 hover:text-[#1e293b] rounded-full font-medium text-sm" 
-                onClick={() => logout()}
-              >
-                <LogOut className="h-4 w-4 mr-1.5" />
-                Logout
-              </Button>
-            </nav>
-            
-            {/* Mobile menu button */}
-            <div className="md:hidden">
-              <Button 
-                variant="ghost" 
-                size="icon"
-                className="text-[#1e293b] hover:bg-white/30 rounded-full" 
-                onClick={toggleMenu}
-              >
-                {isMenuOpen ? <X className="h-5 w-5" /> : <Menu className="h-5 w-5" />}
-              </Button>
-            </div>
-          </div>
+    <header className="relative z-50 px-3 pt-3 md:px-6">
+      <div className="floating-bar mx-auto flex h-14 max-w-[1560px] items-center justify-between gap-4 px-3 md:px-4">
+        <Link to="/" className="flex items-center gap-3 rounded-lg">
+          <img src="/icons/logo.png" alt="" className="h-8 w-auto" />
+          <span className="hidden text-[15px] font-semibold text-ink sm:inline">Campus Premier League</span>
+        </Link>
+
+        <nav className="hidden items-center gap-1 md:flex" aria-label="Organiser">
+          {navLinks.map(({ path, label }) => (
+            <NavLink key={path} to={path} className={linkClass}>{label}</NavLink>
+          ))}
+        </nav>
+
+        <div className="hidden items-center gap-1 md:flex">
+          <Link to="/public" target="_blank" className="inline-flex items-center gap-1.5 rounded-lg px-3 py-2 text-[15px] text-soft transition-colors hover:bg-raised hover:text-ink">
+            Public view <ExternalLink className="h-3.5 w-3.5" />
+          </Link>
+          <button
+            type="button"
+            onClick={() => logout()}
+            className="inline-flex items-center gap-1.5 rounded-lg px-3 py-2 text-[15px] text-soft transition-colors hover:bg-raised hover:text-ink"
+          >
+            <LogOut className="h-4 w-4" /> Log out
+          </button>
         </div>
-        
-        {/* Mobile navigation */}
-        {isMenuOpen && (
-          <div className="md:hidden border-t border-[#c8b0ff]/15 px-5 pb-4 pt-2">
-            <nav className="flex flex-col gap-1">
-              {navLinks.map(({ path, label }) => (
-                <Link
-                  key={path}
-                  to={path}
-                  className={`px-4 py-2.5 rounded-xl text-sm font-medium transition-all ${
-                    isActive(path) 
-                      ? 'bg-white/50 text-[#1e293b] font-bold' 
-                      : 'text-[#334155] hover:bg-white/25'
-                  }`}
-                  onClick={() => setIsMenuOpen(false)}
-                >
-                  {label}
-                </Link>
-              ))}
-              <Button 
-                variant="ghost" 
-                className="text-[#334155] justify-start hover:bg-white/25 rounded-xl mt-1 font-medium text-sm" 
-                onClick={() => {
-                  logout();
-                  setIsMenuOpen(false);
-                }}
-              >
-                <LogOut className="h-4 w-4 mr-2" />
-                Logout
-              </Button>
-            </nav>
-          </div>
-        )}
-      </header>
-    </div>
+
+        <button
+          type="button"
+          className="inline-flex h-11 w-11 items-center justify-center rounded-lg text-ink hover:bg-raised md:hidden"
+          onClick={() => setIsMenuOpen(open => !open)}
+          aria-expanded={isMenuOpen}
+          aria-label={isMenuOpen ? 'Close menu' : 'Open menu'}
+        >
+          {isMenuOpen ? <X className="h-5 w-5" /> : <Menu className="h-5 w-5" />}
+        </button>
+      </div>
+
+      {isMenuOpen && (
+        <nav className="floating-bar mx-auto mt-2 flex max-w-[1560px] flex-col gap-1 p-3 md:hidden" aria-label="Organiser">
+          {navLinks.map(({ path, label }) => (
+            <NavLink key={path} to={path} className={linkClass} onClick={() => setIsMenuOpen(false)}>{label}</NavLink>
+          ))}
+          <Link to="/public" className="rounded-lg px-3 py-2 text-[15px] text-soft hover:bg-raised" onClick={() => setIsMenuOpen(false)}>Public view</Link>
+          <button
+            type="button"
+            className="rounded-lg px-3 py-2 text-left text-[15px] text-soft hover:bg-raised"
+            onClick={() => { logout(); setIsMenuOpen(false); }}
+          >
+            Log out
+          </button>
+        </nav>
+      )}
+    </header>
   );
 };
 

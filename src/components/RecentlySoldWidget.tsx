@@ -1,7 +1,7 @@
-import { useState, useEffect } from 'react';
-import { Player } from './PlayerCard';
+import { useState } from 'react';
+import { Pencil, Loader2 } from 'lucide-react';
+import { Player, CategoryMark } from './PlayerCard';
 import { Team } from './TeamCard';
-import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import {
@@ -10,7 +10,6 @@ import {
   DialogDescription,
   DialogHeader,
   DialogTitle,
-  DialogTrigger,
 } from '@/components/ui/dialog';
 import {
   Select,
@@ -19,11 +18,11 @@ import {
   SelectTrigger,
   SelectValue,
 } from '@/components/ui/select';
-import { Edit2, Loader2 } from 'lucide-react';
 import { modifyPlayerBid } from '@/services/teamService';
 import { useToast } from '@/hooks/use-toast';
 import { supabase } from '@/integrations/supabase/client';
 import { generateAuctionCommentary } from '@/services/aiService';
+import PlayerPhoto from '@/components/PlayerPhoto';
 
 interface RecentlySoldWidgetProps {
   player: Player | null;
@@ -33,143 +32,158 @@ interface RecentlySoldWidgetProps {
 
 export const RecentlySoldWidget = ({ player, teams, onBidUpdated }: RecentlySoldWidgetProps) => {
   const [isOpen, setIsOpen] = useState(false);
-  const [selectedTeamId, setSelectedTeamId] = useState<string>('');
-  const [bidAmount, setBidAmount] = useState<number>(0);
+  const [selectedTeamId, setSelectedTeamId] = useState('');
+  const [bidInput, setBidInput] = useState('');
   const [loading, setLoading] = useState(false);
   const { toast } = useToast();
 
-  useEffect(() => {
-    if (player) {
-      const team = teams.find(t => t.name === player.sold_to);
-      setSelectedTeamId(team?.id || '');
-      setBidAmount(player.bid_price || player.base_price || 0);
-    }
-  }, [player, teams, isOpen]);
-
   if (!player) return null;
 
+  const currentTeam = teams.find(t => t.name === player.sold_to);
+  const currentPrice = player.bid_price || 0;
+
+  // Fill the form once, when it opens, so live reloads never overwrite an edit in progress.
+  const open = () => {
+    setSelectedTeamId(currentTeam?.id || '');
+    setBidInput(String(currentPrice || player.base_price || ''));
+    setIsOpen(true);
+  };
+
+  const bid = Number(bidInput);
+  const selectedTeam = teams.find(t => t.id === selectedTeamId);
+  // The old team gets its money back first, so moving within the same team frees that amount.
+  const available = selectedTeam ? selectedTeam.purse + (selectedTeam.id === currentTeam?.id ? currentPrice : 0) : 0;
+  const error =
+    !selectedTeamId ? 'Pick a team.' :
+    !bidInput || Number.isNaN(bid) ? 'Enter a price.' :
+    bid < player.base_price ? `The base price is ${player.base_price} Cr.` :
+    bid > available ? `${selectedTeam?.name} can spend at most ${available} Cr.` :
+    null;
+  const unchanged = selectedTeamId === currentTeam?.id && bid === currentPrice;
+
   const handleUpdate = async () => {
-    if (!selectedTeamId || bidAmount < (player.base_price || 0)) return;
-    
+    if (error || unchanged) return;
     setLoading(true);
-    try {
-      const { success, error } = await modifyPlayerBid(player.id, {
-        sold: true,
-        sold_to: selectedTeamId,
-        bid_price: bidAmount
-      });
-      
-      if (success) {
-        toast({ title: 'Success', description: 'Player auction details updated.' });
-        
-        const teamObj = teams.find(t => t.id === selectedTeamId);
-        generateAuctionCommentary({
-           event: 'MISTAKE',
-           playerName: player.name,
-           teamName: teamObj?.name || 'A team',
-           price: bidAmount
-        }).then(text => {
-           supabase.channel('auction-events').send({
-              type: 'broadcast',
-              event: 'AI_MEME',
-              payload: { text, title: 'Auctioneer Mistake Alert 🚨' }
-           });
-        });
-        
-        setIsOpen(false);
-        onBidUpdated();
-      } else {
-        throw error;
-      }
-    } catch (err: any) {
-      toast({ title: 'Error', description: err.message, variant: 'destructive' });
-    } finally {
-      setLoading(false);
+    const { success, error: saveError } = await modifyPlayerBid(player.id, {
+      sold: true,
+      sold_to: selectedTeamId,
+      bid_price: bid,
+    });
+    setLoading(false);
+
+    if (!success) {
+      toast({ title: 'Could not update the sale', description: saveError?.message, variant: 'destructive' });
+      return;
     }
+
+    toast({ title: 'Sale corrected', description: `${player.name} → ${selectedTeam?.name} for ${bid} Cr.` });
+    generateAuctionCommentary({
+      event: 'MISTAKE',
+      playerName: player.name,
+      teamName: selectedTeam?.name || 'A team',
+      price: bid,
+    }).then(text => {
+      supabase.channel('auction-events').send({
+        type: 'broadcast',
+        event: 'AI_MEME',
+        payload: { text, title: 'Auctioneer Mistake Alert 🚨' },
+      });
+    });
+    setIsOpen(false);
+    onBidUpdated();
   };
 
   return (
-    <div className="glass-card overflow-hidden mt-6 shadow-sm border border-[#c8b0ff]/30">
-      <div className="bg-[#fbc2eb]/30 px-3 py-2 border-b border-[#c8b0ff]/20 flex items-center justify-between">
-        <h3 className="font-display font-bold text-xs uppercase tracking-wider text-[#1e293b]">Recently Sold</h3>
-        <Dialog open={isOpen} onOpenChange={setIsOpen}>
-          <DialogTrigger asChild>
-            <Button variant="ghost" size="icon" className="h-6 w-6 text-[#334155] hover:text-[#1e293b] hover:bg-white/40 rounded-full">
-              <Edit2 className="h-3 w-3" />
-            </Button>
-          </DialogTrigger>
-          <DialogContent>
-            <DialogHeader>
-              <DialogTitle className="font-display text-[#1e293b] text-xl">Edit Auction Result</DialogTitle>
-              <DialogDescription className="text-[#475569]">
-                Correct a mistake for {player.name}. The previous team's purse will be refunded automatically.
-              </DialogDescription>
-            </DialogHeader>
-            <div className="space-y-5 py-5">
-              <div className="space-y-2">
-                <Label className="text-[#1e293b] font-semibold">Sold To Team</Label>
-                <Select value={selectedTeamId} onValueChange={setSelectedTeamId} disabled={loading}>
-                  <SelectTrigger className="glass-input h-11">
-                    <SelectValue placeholder="Select team" />
-                  </SelectTrigger>
-                  <SelectContent className="glass-card border-none">
-                    {teams.map(t => (
-                      <SelectItem key={t.id} value={t.id}>{t.name} (Purse: {t.purse} Cr)</SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
-              </div>
-              <div className="space-y-2">
-                <Label className="text-[#1e293b] font-semibold">Bid Amount (Cr)</Label>
-                <Input 
-                  type="number" 
-                  step="0.5" 
-                  min={player.base_price} 
-                  value={bidAmount} 
-                  onChange={e => setBidAmount(parseFloat(e.target.value))} 
-                  className="glass-input h-11"
-                  disabled={loading}
-                />
-              </div>
-            </div>
-            <div className="flex justify-end gap-3 mt-4">
-              <Button variant="ghost" onClick={() => setIsOpen(false)} disabled={loading} className="text-[#334155] hover:bg-black/5 rounded-xl">Cancel</Button>
-              <Button onClick={handleUpdate} disabled={loading} className="primary-button rounded-xl shadow-md">
-                {loading ? <Loader2 className="h-4 w-4 animate-spin mr-2" /> : null}
-                Save Changes
-              </Button>
-            </div>
-          </DialogContent>
-        </Dialog>
+    <div className="panel shrink-0 p-4">
+      <div className="mb-3 flex items-center justify-between">
+        <h3 className="text-[15px] font-semibold text-ink">Last sale</h3>
+        <button
+          type="button"
+          onClick={open}
+          className="inline-flex items-center gap-1.5 rounded-lg px-2.5 py-1.5 text-sm font-medium text-tan transition-colors hover:bg-raised"
+        >
+          <Pencil className="h-3.5 w-3.5" /> Fix it
+        </button>
       </div>
-      
-      <div 
-        className="p-4 flex items-center gap-3 bg-white/20 hover:bg-white/40 transition-colors cursor-pointer group" 
-        onClick={() => setIsOpen(true)}
+
+      <button
+        type="button"
+        onClick={open}
+        className="flex w-full items-center gap-3 rounded-xl bg-raised p-3 text-left transition-colors hover:bg-line"
       >
-        {player.image_url ? (
-          <img src={player.image_url} alt={player.name} className="w-10 h-10 rounded-full object-cover shadow-sm bg-white" />
-        ) : (
-          <div className="w-10 h-10 rounded-full flex items-center justify-center font-display font-bold text-[#334155] bg-white/50 text-base shadow-sm border border-white/20">
-            {player.name.charAt(0)}
-          </div>
-        )}
-        <div className="flex-1 min-w-0">
-          <h4 className="font-bold text-sm text-[#1e293b] truncate leading-tight group-hover:text-primary transition-colors">{player.name}</h4>
-          <div className="flex items-center gap-1.5 mt-0.5">
-             <span className={`text-[8px] uppercase font-bold px-1.5 py-px rounded-md ${
-               player.category === 'Bowler' ? 'cat-bowler' :
-               player.category === 'Batter' ? 'cat-batter' : 'cat-allrounder'
-             }`}>{player.category.charAt(0)}</span>
-             <p className="text-[11px] font-semibold text-[#334155] truncate">{player.sold_to}</p>
-          </div>
-        </div>
-        <div className="text-right">
-          <span className="font-display font-bold text-[#ff8787] text-base bg-white/60 px-2 py-0.5 rounded-lg shadow-sm border border-white/40 group-hover:scale-105 transition-transform">
-            {player.bid_price} Cr
+        <PlayerPhoto src={player.image_url} name={player.name} className="h-12 w-12 shrink-0 rounded-full" />
+        <span className="min-w-0 flex-1">
+          <span className="block truncate font-semibold text-ink">{player.name}</span>
+          <span className="mt-0.5 flex items-center gap-2 text-sm text-soft">
+            <CategoryMark category={player.category} short />
+            <span className="truncate">{player.sold_to}</span>
           </span>
-        </div>
-      </div>
+        </span>
+        <span className="figure shrink-0 text-2xl text-tan">{currentPrice}<span className="ml-0.5 text-sm">Cr</span></span>
+      </button>
+
+      <Dialog open={isOpen} onOpenChange={setIsOpen}>
+        <DialogContent className="rounded-[20px]">
+          <DialogHeader>
+            <DialogTitle className="text-xl">Fix the last sale</DialogTitle>
+            <DialogDescription>
+              Change where {player.name} went or what they cost. The old team gets {currentPrice} Cr back automatically.
+            </DialogDescription>
+          </DialogHeader>
+
+          <div className="space-y-5 py-2">
+            <div className="space-y-2">
+              <Label htmlFor="fix-team" className="text-sm font-medium text-ink">Team</Label>
+              <Select value={selectedTeamId} onValueChange={setSelectedTeamId} disabled={loading}>
+                <SelectTrigger id="fix-team" className="glass-input h-11 rounded-xl">
+                  <SelectValue placeholder="Pick a team" />
+                </SelectTrigger>
+                <SelectContent>
+                  {teams.map(t => (
+                    <SelectItem key={t.id} value={t.id}>
+                      {t.name} · {t.purse + (t.id === currentTeam?.id ? currentPrice : 0)} Cr available
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
+            <div className="space-y-2">
+              <Label htmlFor="fix-price" className="text-sm font-medium text-ink">Price (Cr)</Label>
+              <Input
+                id="fix-price"
+                type="number"
+                inputMode="decimal"
+                step="0.5"
+                min={player.base_price}
+                value={bidInput}
+                onChange={e => setBidInput(e.target.value)}
+                className="glass-input h-11 rounded-xl"
+                aria-invalid={!!error}
+                aria-describedby="fix-error"
+                disabled={loading}
+              />
+              <p id="fix-error" className={error ? 'text-sm text-leather' : 'text-sm text-soft'}>
+                {error ?? `Base price ${player.base_price} Cr.`}
+              </p>
+            </div>
+          </div>
+
+          <div className="flex justify-end gap-2">
+            <button type="button" onClick={() => setIsOpen(false)} disabled={loading} className="secondary-button">
+              Cancel
+            </button>
+            <button
+              type="button"
+              onClick={handleUpdate}
+              disabled={loading || !!error || unchanged}
+              className="primary-button inline-flex items-center gap-2 disabled:pointer-events-none disabled:opacity-50"
+            >
+              {loading && <Loader2 className="h-4 w-4 animate-spin" />}
+              Save
+            </button>
+          </div>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 };

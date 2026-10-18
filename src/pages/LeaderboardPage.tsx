@@ -147,7 +147,7 @@ const LeaderboardPage = () => {
       
       <div className="mt-8 grid md:grid-cols-3 gap-6">
         {teams.slice(0, 3).map((team, index) => (
-          <Card key={team.id} className={`${index === 0 ? "border-primary/30 shadow-lg" : ""}`}>
+          <Card key={team.id} className={`${index === 0 ? "border-primary/30" : ""}`}>
             <CardHeader className={`${index === 0 ? "gradient-header text-white" : "bg-primary/5"}`}>
               <CardTitle className="flex items-center justify-between">
                 <span className={index === 0 ? "text-white" : ""}>{team.name}</span>

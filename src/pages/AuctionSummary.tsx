@@ -1,232 +1,85 @@
-import { useEffect, useState, useMemo } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
+import { ArrowLeft } from 'lucide-react';
 import { fetchPublicAuctionData } from '@/services/teamService';
 import { Team } from '@/components/TeamCard';
-import { Trophy, Medal, Award, ArrowLeft, Loader2, IndianRupee } from 'lucide-react';
-import { Button } from '@/components/ui/button';
-import { Badge } from '@/components/ui/badge';
-import PlayerCard, { Player } from '@/components/PlayerCard';
+import { Player, CategoryMark } from '@/components/PlayerCard';
+import PlayerPhoto from '@/components/PlayerPhoto';
+import { cn } from '@/lib/utils';
+import { rankLabel, rankTeams } from '@/lib/ranking';
+import Podium from '@/components/Podium';
+
+// Highest-priority pick, then most points, then the biggest spend.
+const bestBuy = (players: Player[] = []) =>
+  [...players].sort((a, b) =>
+    a.priority - b.priority || b.points - a.points || (b.bid_price || 0) - (a.bid_price || 0),
+  )[0] ?? null;
 
 const AuctionSummary = () => {
   const navigate = useNavigate();
   const [teams, setTeams] = useState<Team[]>([]);
   const [loading, setLoading] = useState(true);
 
-  // Load final auction results
   useEffect(() => {
-    const loadData = async () => {
-      setLoading(true);
-      const { teams: fetchedTeams } = await fetchPublicAuctionData();
-      
-      // Sort teams by points descending
-      const rankedTeams = [...(fetchedTeams || [])].sort((a, b) => b.points - a.points);
-      setTeams(rankedTeams);
+    fetchPublicAuctionData().then(({ teams: fetched }) => {
+      setTeams([...(fetched || [])].sort((a, b) => b.points - a.points || b.purse - a.purse));
       setLoading(false);
-    };
-    loadData();
+    });
   }, []);
 
-  // Determine "Best Buy" for a team
-  const getBestBuy = (teamPlayers: Player[]) => {
-    if (!teamPlayers || teamPlayers.length === 0) return null;
-    
-    // Sort logic: Top priority (lowest number), then Points (highest), then Price (highest)
-    return [...teamPlayers].sort((a, b) => {
-      if (a.priority !== b.priority) return a.priority - b.priority;
-      if (a.points !== b.points) return b.points - a.points;
-      return (b.bid_price || 0) - (a.bid_price || 0);
-    })[0];
-  };
-
-  const teamsWithPlayers = teams.filter(t => t.players && t.players.length > 0);
-  const top3 = teamsWithPlayers.slice(0, 3);
-  const remainingTeams = teams.filter(t => !top3.find(pt => pt.id === t.id));
-
-  if (loading) {
-    return (
-      <div className="flex h-full w-full items-center justify-center">
-        <Loader2 className="h-10 w-10 animate-spin text-[#ff8787]" />
-      </div>
-    );
-  }
+  const ranked = useMemo(() => rankTeams(teams), [teams]);
+  const podium = ranked.filter(t => t.rank !== null).slice(0, 3);
+  const rest = ranked.slice(podium.length);
 
   return (
-    <div className="min-h-full w-full overflow-y-auto no-scrollbar py-8 px-4 md:px-8">
-      <div className="max-w-6xl mx-auto space-y-12">
-        {/* Header */}
-        <div className="text-center space-y-3 relative">
-          <Button 
-            variant="ghost" 
-            className="absolute left-0 top-0 text-[#475569] hover:bg-white/20 hover:text-[#1e293b] rounded-xl hidden md:flex" 
-            onClick={() => navigate('/auction')}
-          >
-            <ArrowLeft className="mr-2 h-4 w-4" />
-            Back to Auction
-          </Button>
-          <Badge className="bg-[#ff8787]/20 text-[#ff8787] hover:bg-[#ff8787]/30 border-0 rounded-full px-4 py-1 font-display uppercase tracking-widest">
-            Auction Concluded
-          </Badge>
-          <h1 className="font-display font-extrabold text-4xl md:text-5xl text-[#1e293b] tracking-tight">
-            Final Standings
-          </h1>
-          <p className="text-[#475569] font-medium max-w-xl mx-auto">
-            The hammer has fallen. Here are the top performing teams and their most valuable assets secured during the draft.
-          </p>
-        </div>
-
-        {/* Podium - Top 3 */}
-        {top3.length > 0 && (
-          <div className="flex flex-col md:flex-row items-end justify-center gap-6 mt-10">
-            {/* Rank 2 - Silver */}
-            {top3[1] && (
-              <PodiumCard 
-                team={top3[1]} 
-                rank={2} 
-                bestBuy={getBestBuy(top3[1].players || [])} 
-                icon={<Medal className="h-8 w-8 text-[#94a3b8]" />}
-                colorClass="from-[#e2e8f0]/80 to-[#f1f5f9]/80 border-[#cbd5e1]/50"
-                heightClass="md:h-[350px]"
-              />
-            )}
-
-            {/* Rank 1 - Gold */}
-            {top3[0] && (
-              <PodiumCard 
-                team={top3[0]} 
-                rank={1} 
-                bestBuy={getBestBuy(top3[0].players || [])} 
-                icon={<Trophy className="h-12 w-12 text-[#eab308]" />}
-                colorClass="from-[#fef08a]/80 to-[#fde047]/60 border-[#fde047]/50 shadow-[0_0_30px_rgba(250,204,21,0.3)] z-10"
-                heightClass="md:h-[400px]"
-              />
-            )}
-
-            {/* Rank 3 - Bronze */}
-            {top3[2] && (
-              <PodiumCard 
-                team={top3[2]} 
-                rank={3} 
-                bestBuy={getBestBuy(top3[2].players || [])} 
-                icon={<Award className="h-8 w-8 text-[#b45309]" />}
-                colorClass="from-[#ffedd5]/80 to-[#fed7aa]/80 border-[#fdba74]/50"
-                heightClass="md:h-[320px]"
-              />
-            )}
-          </div>
-        )}
-
-        {/* Remaining Teams */}
-        {remainingTeams.length > 0 && (
-          <div className="mx-auto max-w-4xl space-y-4 pt-8">
-            <h3 className="font-display font-bold text-xl text-[#1e293b] mb-6 text-center">Remaining Teams</h3>
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-              {remainingTeams.map((team, index) => {
-                const bestBuy = getBestBuy(team.players || []);
-                return (
-                  <div key={team.id} className="glass-card p-4 flex items-center justify-between group hover:bg-white/60 transition-colors">
-                    <div className="flex items-center gap-4">
-                      <div className="h-10 w-10 rounded-full bg-white/50 flex items-center justify-center font-display font-bold text-[#334155]">
-                        #{index + 4}
-                      </div>
-                      <div>
-                        <h4 className="font-display font-bold text-[#1e293b] leading-tight">{team.name}</h4>
-                        <p className="text-xs font-semibold text-[#475569]">{team.points} Points • {team.players?.length || 0} Players</p>
-                      </div>
-                    </div>
-                    {bestBuy && (
-                      <div className="text-right">
-                        <p className="text-[10px] uppercase tracking-wider text-[#64748b] font-bold">Best Buy</p>
-                        <p className="text-sm font-bold text-[#ff8787]">{bestBuy.name}</p>
-                      </div>
-                    )}
-                  </div>
-                );
-              })}
-            </div>
-          </div>
-        )}
-
-        {/* Action Button */}
-        <div className="flex justify-center pt-10 pb-8">
-          <Button 
-            className="primary-button text-lg px-8 py-6 rounded-2xl shadow-xl flex items-center gap-2"
-            onClick={() => navigate('/auction')}
-          >
-            <ArrowLeft className="h-5 w-5" />
-            Continue Auction
-          </Button>
-        </div>
-      </div>
-    </div>
-  );
-};
-
-interface PodiumCardProps {
-  team: Team;
-  rank: number;
-  bestBuy: Player | null;
-  icon: React.ReactNode;
-  colorClass: string;
-  heightClass: string;
-}
-
-const PodiumCard = ({ team, rank, bestBuy, icon, colorClass, heightClass }: PodiumCardProps) => {
-  return (
-    <div className={`w-full max-w-sm rounded-[2rem] border backdrop-blur-xl bg-gradient-to-br p-6 flex flex-col justify-between transition-all duration-500 hover:-translate-y-2 ${colorClass} ${heightClass}`}>
-      <div className="space-y-4 text-center pb-4">
-        <div className="mx-auto bg-white/40 shadow-sm backdrop-blur-sm h-16 w-16 rounded-full flex items-center justify-center mb-2">
-          {icon}
-        </div>
+    <div className="mx-auto max-w-[1200px] px-4 pb-20 pt-8 md:px-8">
+      <div className="mb-8 flex flex-wrap items-end justify-between gap-4">
         <div>
-          <Badge className="mb-2 bg-white/50 text-[#1e293b] border-0">Rank {rank}</Badge>
-          <h3 className="font-display font-extrabold text-[#1e293b] text-2xl leading-tight">
-            {team.name}
-          </h3>
-          <div className="mt-2 inline-flex items-center gap-1.5 bg-black/5 px-3 py-1 rounded-xl">
-            <span className="font-bold text-[#334155]">{team.points}</span>
-            <span className="text-xs uppercase tracking-wider font-semibold text-[#475569]">Pts</span>
-          </div>
+          <h1 className="page-header text-3xl md:text-4xl">Final standings</h1>
+          <p className="mt-1 text-ink">Ranked by points. Best buy is each team's top-priority signing.</p>
         </div>
+        <button type="button" onClick={() => navigate('/auction')} className="secondary-button inline-flex items-center gap-2">
+          <ArrowLeft className="h-4 w-4" /> Back to the auction
+        </button>
       </div>
 
-      {bestBuy ? (
-        <div className="mt-auto bg-white/60 backdrop-blur-md rounded-2xl p-4 shadow-sm border border-white/40 group">
-          <div className="flex justify-between items-start mb-2 border-b border-black/5 pb-2">
-            <span className="text-[10px] font-bold uppercase tracking-widest text-[#475569]">Best Buy</span>
-            <div className="flex items-center gap-0.5 text-[#ff8787]">
-              <span className="font-display font-bold text-sm tracking-tight">{bestBuy.bid_price} Cr</span>
-            </div>
-          </div>
-          <div className="flex items-center gap-3">
-             {bestBuy.image_url ? (
-               <div className="h-10 w-10 rounded-full overflow-hidden border border-white/50 shrink-0 shadow-sm bg-white">
-                 <img 
-                   src={bestBuy.image_url} 
-                   alt={bestBuy.name} 
-                   className="h-full w-full object-cover"
-                   onError={(e) => {
-                      (e.target as HTMLImageElement).style.display = 'none';
-                      (e.target as HTMLElement).parentElement!.innerHTML = `<span class="flex h-full items-center justify-center font-display font-bold text-[#334155] bg-white/50 text-sm shadow-sm">${bestBuy.name.charAt(0)}</span>`;
-                   }}
-                 />
-               </div>
-             ) : (
-                <div className="h-10 w-10 rounded-full flex items-center justify-center font-display font-bold text-[#334155] bg-white text-base shadow-sm shrink-0">
-                  {bestBuy.name.charAt(0)}
-                </div>
-             )}
-             <div className="min-w-0">
-               <p className="font-bold text-[#1e293b] truncate text-sm leading-tight group-hover:text-primary transition-colors">{bestBuy.name}</p>
-               <span className={`text-[8px] uppercase font-bold px-1.5 py-0.5 mt-0.5 inline-block rounded-md ${
-                 bestBuy.category === 'Bowler' ? 'cat-bowler' :
-                 bestBuy.category === 'Batter' ? 'cat-batter' : 'cat-allrounder'
-               }`}>{bestBuy.category}</span>
-             </div>
-          </div>
+      {loading ? (
+        <div className="grid gap-4 md:grid-cols-3">
+          {[0, 1, 2].map(i => <div key={i} className="skeleton h-80 rounded-[18px]" />)}
+        </div>
+      ) : teams.length === 0 ? (
+        <div className="rounded-[18px] bg-surface px-6 py-16 text-center">
+          <h2 className="text-lg font-semibold text-ink">No franchises yet</h2>
+          <p className="mt-1 text-soft">Create teams and run the auction to see standings here.</p>
         </div>
       ) : (
-        <div className="mt-auto bg-white/40 rounded-2xl p-4 text-center border border-white/20 border-dashed">
-          <p className="text-xs font-semibold text-[#475569]">No players secured</p>
+        <div className="space-y-8">
+          <Podium teams={podium} />
+
+          {rest.length > 0 && (
+            <ul className="grid gap-3 md:grid-cols-2">
+              {rest.map(team => {
+                const pick = bestBuy(team.players);
+                return (
+                  <li key={team.id} className="flex items-center justify-between gap-4 rounded-[14px] bg-surface p-4">
+                    <div className="flex min-w-0 items-center gap-4">
+                      <span className="w-6 text-right text-soft">{rankLabel(team.rank)}</span>
+                      <div className="min-w-0">
+                        <p className="truncate font-semibold text-ink">{team.name}</p>
+                        <p className="text-sm text-soft">{team.points} pts · {team.players?.length ?? 0} players</p>
+                      </div>
+                    </div>
+                    {pick && (
+                      <div className="min-w-0 text-right text-sm">
+                        <p className="text-soft">Best buy</p>
+                        <p className="truncate font-medium text-ink">{pick.name}</p>
+                      </div>
+                    )}
+                  </li>
+                );
+              })}
+            </ul>
+          )}
         </div>
       )}
     </div>

@@ -1,8 +1,6 @@
-import { useMemo, useState } from 'react'
-import { User2, Trash2 } from 'lucide-react';
-import { Button } from '@/components/ui/button';
-import { Badge } from '@/components/ui/badge';
-import { supabase } from '@/integrations/supabase/client';
+import { Trash2 } from 'lucide-react';
+import PlayerPhoto from '@/components/PlayerPhoto';
+import { cn } from '@/lib/utils';
 
 export type Player = {
   id: string;
@@ -17,100 +15,75 @@ export type Player = {
   bid_price?: number;
 };
 
+export const categoryClass = (category: string) =>
+  category === 'Bowler' ? 'cat-bowler' : category === 'Batter' ? 'cat-batter' : 'cat-allrounder';
+
+export const CategoryMark = ({ category, short = false, className }: { category: string; short?: boolean; className?: string }) => (
+  <span className={cn('inline-flex items-center rounded-md px-2 py-0.5 text-[13px] font-semibold leading-5', categoryClass(category), className)}>
+    {short ? category.charAt(0) : category}
+  </span>
+);
+
 interface PlayerCardProps {
   player: Player;
   onDelete?: (id: string) => void;
   showActions?: boolean;
   isAuctionCard?: boolean;
+  priority?: boolean;
 }
 
-const CategoryStyles: Record<string, string> = {
-  'Bowler': 'cat-bowler',
-  'Batter': 'cat-batter',
-  'All-Rounder': 'cat-allrounder',
-};
+const PlayerCard = ({ player, onDelete, showActions = true, priority = false }: PlayerCardProps) => {
+  const { id, name, category, points, base_price, image_url, sold, bid_price, sold_to } = player;
 
-const PlayerCard = ({ 
-  player, 
-  onDelete, 
-  showActions = true,
-  isAuctionCard = false
-}: PlayerCardProps) => {
-  const { id, name, category, points, priority, base_price, image_url, sold, bid_price } = player;
-  
-  const [imgError, setImgError] = useState(false);
-  const imageSrc = useMemo(() => {
-    if (!image_url) return null;
-    if (image_url.startsWith('http')) return image_url;
-    const { data } = supabase.storage.from('player-images').getPublicUrl(image_url);
-    return data.publicUrl || null;
-  }, [image_url]);
-  
   return (
-    <div className={`glass-card overflow-hidden flex flex-col ${sold ? 'opacity-65' : ''}`}>
-      {/* Image */}
-      <div className="relative aspect-[4/3] w-full overflow-hidden bg-gradient-to-br from-[#bae6fd]/30 to-[#cee9ff]/30">
-        {imageSrc && !imgError ? (
-          <img 
-            src={imageSrc} 
-            alt={name} 
-            className="h-full w-full object-cover transition-transform duration-300 hover:scale-105" 
-            onError={() => setImgError(true)}
-            loading="lazy"
-          />
-        ) : (
-          <div className="flex h-full items-center justify-center">
-            <User2 className="h-14 w-14 text-[#93c5fd]" />
-          </div>
+    <article className="group flex flex-col overflow-hidden rounded-[14px] bg-surface">
+      <div className="relative">
+        <PlayerPhoto
+          src={image_url}
+          name={name}
+          priority={priority}
+          className="aspect-[4/5] w-full"
+          imgClassName="transition-transform duration-500 ease-out group-hover:scale-[1.03] motion-reduce:group-hover:scale-100"
+        />
+        <CategoryMark category={category} className="absolute left-3 top-3" />
+        {sold && (
+          <span className="absolute right-3 top-3 rounded-md bg-tan px-2 py-0.5 text-[13px] font-semibold leading-5 text-tan-ink">
+            Sold
+          </span>
         )}
-        <Badge className={`absolute top-2.5 right-2.5 ${CategoryStyles[category]} border-0 text-xs font-semibold rounded-lg px-2.5 py-1`}>
-          {category}
-        </Badge>
       </div>
-      
-      {/* Content */}
-      <div className="p-4 flex-1 flex flex-col justify-between">
-        <div className="space-y-2.5">
-          <h3 className="font-display font-bold text-[#1e293b] truncate">{name}</h3>
-          
-          <div className="grid grid-cols-3 gap-2">
-            <div className="text-center p-2 rounded-xl bg-white/40">
-              <p className="text-[10px] text-[#475569] font-medium">Points</p>
-              <p className="font-display font-bold text-sm text-[#1e293b]">{points}</p>
-            </div>
-            <div className="text-center p-2 rounded-xl bg-white/40">
-              <p className="text-[10px] text-[#475569] font-medium">Priority</p>
-              <p className="font-display font-bold text-sm text-[#1e293b]">{priority}</p>
-            </div>
-            <div className="text-center p-2 rounded-xl bg-white/40">
-              <p className="text-[10px] text-[#475569] font-medium">Base</p>
-              <p className="font-display font-bold text-sm text-[#1e293b]">{base_price}Cr</p>
-            </div>
-          </div>
-          
-          {sold && bid_price && (
-            <div className="text-center p-2 rounded-xl bg-[#bae6fd]/30">
-              <p className="text-[10px] text-[#475569] font-medium">Sold Price</p>
-              <p className="font-display font-bold text-sm text-[#334155]">{bid_price} Cr</p>
-            </div>
-          )}
+
+      <div className="flex flex-1 flex-col gap-3 p-4">
+        <div className="min-w-0">
+          <h3 className="truncate text-[17px] font-semibold text-ink">{name}</h3>
+          {sold && sold_to && <p className="truncate text-sm text-soft">{sold_to}</p>}
         </div>
-        
-        {showActions && onDelete && (
-          <div className="mt-3 pt-3 border-t border-white/30">
-            <Button 
-              variant="ghost" 
-              size="sm"
-              className="w-full text-xs text-red-400 hover:text-red-600 hover:bg-red-50/50 rounded-xl font-medium"
-              onClick={() => onDelete(id)}
-            >
-              <Trash2 className="h-3.5 w-3.5 mr-1.5" />
-              Remove
-            </Button>
+
+        <dl className="grid grid-cols-2 gap-2 text-sm">
+          <div className="rounded-lg bg-raised px-3 py-2">
+            <dt className="text-soft">Points</dt>
+            <dd className="text-lg font-semibold text-ink">{points}</dd>
           </div>
+          <div className="rounded-lg bg-raised px-3 py-2">
+            <dt className="text-soft">{sold && bid_price ? 'Sold for' : 'Base'}</dt>
+            <dd className={cn('text-lg font-semibold', sold && bid_price ? 'text-tan' : 'text-ink')}>
+              {sold && bid_price ? bid_price : base_price} Cr
+            </dd>
+          </div>
+        </dl>
+
+        {showActions && onDelete && (
+          <button
+            type="button"
+            onClick={() => onDelete(id)}
+            className="mt-auto inline-flex h-10 items-center justify-center gap-2 rounded-lg text-sm font-medium text-soft transition-colors hover:bg-raised hover:text-leather"
+          >
+            <Trash2 className="h-4 w-4" />
+            Remove
+          </button>
         )}
       </div>
-    </div>
+    </article>
   );
 };
 

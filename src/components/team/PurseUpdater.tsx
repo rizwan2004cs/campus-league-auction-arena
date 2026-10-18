@@ -50,13 +50,13 @@ const PurseUpdater = ({ initialValue, onUpdate }: PurseUpdaterProps) => {
   
   return (
     <div className="space-y-4">
-      <div className="flex items-center text-[#1e293b] mb-2">
-        <RefreshCw className="h-5 w-5 mr-2 text-[#a78bfa]" />
+      <div className="flex items-center text-ink mb-2">
+        <RefreshCw className="h-5 w-5 mr-2 text-tan" />
         <h2 className="font-display font-bold text-lg">Update All Purses</h2>
       </div>
       <div className="space-y-4">
         <div className="space-y-1.5">
-          <Label htmlFor="globalPurse" className="text-xs font-semibold text-[#334155]">New Purse Value (Cr)</Label>
+          <Label htmlFor="globalPurse" className="text-xs font-semibold text-ink">New Purse Value (Cr)</Label>
           <Input 
             id="globalPurse" 
             type="number" 
@@ -67,7 +67,7 @@ const PurseUpdater = ({ initialValue, onUpdate }: PurseUpdaterProps) => {
             className="glass-input rounded-xl h-10"
             required 
           />
-          <p className="text-[10px] text-[#475569]">
+          <p className="text-[10px] text-soft">
             This will update all teams' purses to this value
           </p>
         </div>

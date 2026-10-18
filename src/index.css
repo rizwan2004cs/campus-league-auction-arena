@@ -2,225 +2,361 @@
 @tailwind components;
 @tailwind utilities;
 
-/* ═══════════════════════════════════════════════
-   PASTEL RAINBOW THEME
-   ═══════════════════════════════════════════════ */
+/* Light, minimal, professional. Neutral white ground, near-black ink,
+   the Campus Premier League maroon for actions and its coral for the
+   moments that matter (sold, live). Flat fields, tone steps between
+   surfaces, no glass, no gradients, no shadows on anything at rest.
+   Token names (tan, willow...) are kept from the first pass; read
+   "tan" as "brand accent". */
 
 @layer base {
   :root {
-    /* Background: Soft pastel white/blueish tint */
-    --background: 210 100% 98%;
-    /* Foreground: Navy Blue for readability */
-    --foreground: 215 32% 17%;
+    /* Scorebook paper, scoreboard black, and one hot accent: the red of a new ball. */
+    --c-stage: #f2efe8;
+    --c-surface: #fbfaf6;
+    --c-raised: #ebe7de;
+    --c-line: #d9d3c7;
+    --c-ink: #1c1a17;
+    --c-soft: #5e584f;
+    --c-tan: #d1343e;
+    --c-tan-ink: #ffffff;
+    --c-willow: #b0262f;
+    --c-coral: #e8505a;
+    --c-leather: #b0262f;
+    --c-outfield: #2f7a4a;
+    --c-board: #161412;
+    --c-led: #ffb547;
 
-    --card: 0 0% 100%;
-    --card-foreground: 215 32% 17%;
+    --c-cat-batter: #fde2c3;
+    --c-cat-bowler: #f9d4d6;
+    --c-cat-allrounder: #d6ecd5;
 
-    --popover: 0 0% 100%;
-    --popover-foreground: 215 32% 17%;
-
-    /* Primary: Pastel Red / Coral */
-    --primary: 0 100% 70%;
+    /* shadcn tokens mapped onto the same palette (HSL triplets). */
+    --background: 43 26% 93%;
+    --foreground: 30 10% 10%;
+    --card: 45 33% 98%;
+    --card-foreground: 30 10% 10%;
+    --popover: 45 33% 98%;
+    --popover-foreground: 30 10% 10%;
+    --primary: 356 62% 51%;
     --primary-foreground: 0 0% 100%;
-
-    /* Secondary: Soft Pastel Blue */
-    --secondary: 204 70% 81%;
-    --secondary-foreground: 215 32% 17%;
-
-    /* Muted: Soft grey-blue */
-    --muted: 214 32% 91%;
-    --muted-foreground: 215 25% 45%;
-
-    --accent: 280 60% 85%; /* Pastel purple */
-    --accent-foreground: 215 32% 17%;
-
-    --destructive: 0 84% 60%;
+    --secondary: 42 18% 90%;
+    --secondary-foreground: 30 10% 10%;
+    --muted: 42 18% 90%;
+    --muted-foreground: 34 8% 34%;
+    --accent: 42 18% 90%;
+    --accent-foreground: 30 10% 10%;
+    --destructive: 356 64% 42%;
     --destructive-foreground: 0 0% 100%;
+    --border: 40 16% 81%;
+    --input: 40 16% 81%;
+    --ring: 356 62% 51%;
+    --radius: 0.75rem;
 
-    /* Borders & Rings: Light pastel blue */
-    --border: 214 32% 85%;
-    --input: 214 32% 85%;
-    --ring: 215 32% 17%;
-
-    --radius: 1rem;
+    color-scheme: light;
   }
 }
 
 @layer base {
   * {
     @apply border-border;
-    /* NUCLEAR scrollbar kill — every single element */
-    scrollbar-width: none !important;
-    -ms-overflow-style: none !important;
   }
 
-  *::-webkit-scrollbar {
-    display: none !important;
-    width: 0 !important;
-    height: 0 !important;
-  }
-
-  body, html {
-    margin: 0;
-    padding: 0;
-    height: 100%;
-    overflow: hidden;
+  html {
+    scroll-behavior: smooth;
+    scrollbar-color: var(--c-line) transparent;
+    scrollbar-width: thin;
+    -webkit-text-size-adjust: 100%;
   }
 
   body {
-    @apply text-foreground;
-    font-family: 'Plus Jakarta Sans', -apple-system, BlinkMacSystemFont, sans-serif;
+    margin: 0;
+    min-height: 100svh;
+    background: var(--c-stage);
+    color: var(--c-ink);
+    font-family: 'Rubik', system-ui, -apple-system, sans-serif;
+    font-size: 1rem;
+    line-height: 1.5;
     -webkit-font-smoothing: antialiased;
     -moz-osx-font-smoothing: grayscale;
-
-    /* Coral Sunrise mesh — matching the vibrant fluid pink & yellow reference */
-    background: #fff5f8;
-    background-image:
-      radial-gradient(ellipse at 0% 0%,   rgba(253, 244, 151, 0.75) 0%, transparent 55%),
-      radial-gradient(ellipse at 100% 0%,  rgba(254, 207, 239, 0.85) 0%, transparent 50%),
-      radial-gradient(ellipse at 85% 90%,  rgba(255, 236, 179, 0.70) 0%, transparent 60%),
-      radial-gradient(ellipse at 15% 95%,  rgba(255, 154, 158, 0.85) 0%, transparent 65%),
-      radial-gradient(ellipse at 50% 45%,  rgba(251, 194, 235, 0.65) 0%, transparent 60%);
-    background-attachment: fixed;
-    height: 100vh;
-    width: 100vw;
+    font-variant-numeric: tabular-nums;
   }
 
+  /* Headings: Unbounded, wide and game-show bold. Body reads in Rubik. */
   h1, h2, h3, h4, h5, h6 {
-    font-family: 'Bricolage Grotesque', sans-serif;
-    letter-spacing: -0.01em;
+    font-family: 'Unbounded', 'Rubik', system-ui, sans-serif;
+    font-weight: 800;
+    letter-spacing: -0.015em;
+    text-wrap: balance;
+  }
+
+  p {
+    text-wrap: pretty;
+  }
+
+  ::selection {
+    background: var(--c-tan);
+    color: var(--c-tan-ink);
+  }
+
+  :focus-visible {
+    outline: 2px solid var(--c-tan);
+    outline-offset: 2px;
+  }
+
+  img {
+    color: transparent;
+  }
+
+  /* An unlit stadium scoreboard: a faint grid of LED dots under everything. */
+  body::before {
+    content: "";
+    position: fixed;
+    inset: 0;
+    z-index: -2;
+    pointer-events: none;
+    background-image: radial-gradient(rgb(28 26 23 / 0.075) 1.1px, transparent 1.6px);
+    background-size: 18px 18px;
+    -webkit-mask-image: linear-gradient(180deg, #000 0%, rgb(0 0 0 / 0.35) 70%, rgb(0 0 0 / 0.6) 100%);
+    mask-image: linear-gradient(180deg, #000 0%, rgb(0 0 0 / 0.35) 70%, rgb(0 0 0 / 0.6) 100%);
+  }
+
+  /* The batter from the crest, blurred and faint, mid-swing on the wall. */
+  body::after {
+    content: "";
+    position: fixed;
+    inset: 0;
+    z-index: -1;
+    pointer-events: none;
+    background: url("/icons/logo.png") no-repeat right -4% top 6% / auto 88vh;
+    filter: blur(2px) grayscale(0.2);
+    opacity: 0.13;
+    transform: rotate(-8deg);
+  }
+
+  /* Pages that carry their own artwork drop the watermark. */
+  :root[data-page="bare"] body::after { display: none; }
+
+  @media (prefers-reduced-motion: reduce) {
+    html { scroll-behavior: auto; }
+  }
+
+  @media (max-width: 767px) {
+    body::after { background-size: auto 60vh; background-position: right -30% top 10%; opacity: 0.1; }
+  }
+
+  input:-webkit-autofill,
+  input:-webkit-autofill:hover,
+  input:-webkit-autofill:focus {
+    -webkit-text-fill-color: var(--c-ink);
+    -webkit-box-shadow: 0 0 0 1000px var(--c-surface) inset;
+    transition: background-color 9999s ease-out;
   }
 }
 
 @layer utilities {
-  .no-scrollbar::-webkit-scrollbar { display: none !important; }
-  .no-scrollbar {
-    -ms-overflow-style: none !important;
-    scrollbar-width: none !important;
+  /* Kept for horizontal rails where a scrollbar would sit on content. */
+  .no-scrollbar::-webkit-scrollbar { display: none; }
+  .no-scrollbar { scrollbar-width: none; }
+
+  /* Big type: Unbounded, heavy and tight. */
+  .font-display {
+    font-family: 'Unbounded', 'Rubik', system-ui, sans-serif;
+    font-weight: 800;
+    letter-spacing: -0.03em;
+    line-height: 0.98;
   }
 
-  .font-display {
-    font-family: 'Bricolage Grotesque', sans-serif;
+  .figure {
+    font-family: 'Unbounded', 'Rubik', system-ui, sans-serif;
+    font-weight: 800;
+    font-variant-numeric: tabular-nums lining-nums;
+    letter-spacing: -0.04em;
+    line-height: 0.95;
+  }
+
+  /* Scoreboard dot-matrix: prices, purses, ranks and short labels. */
+  .dot {
+    font-family: 'Doto', ui-monospace, monospace;
+    font-weight: 900;
+    font-variant-numeric: tabular-nums;
+    letter-spacing: 0.02em;
+    line-height: 1;
+  }
+  .dot-label {
+    font-family: 'Doto', ui-monospace, monospace;
+    font-weight: 900;
+    text-transform: uppercase;
+    letter-spacing: 0.08em;
+    font-size: 15px;
+    line-height: 1.2;
+  }
+
+  /* A lit LED board: black panel, amber dots that glow a little. */
+  .led {
+    background: var(--c-board);
+    color: var(--c-led);
+    text-shadow: 0 0 6px rgb(255 181 71 / 0.55);
+  }
+
+  @keyframes ticker {
+    from { transform: translateX(0); }
+    to { transform: translateX(-50%); }
+  }
+  .ticker-track {
+    animation: ticker var(--ticker-duration, 40s) linear infinite;
+  }
+  .ticker-track:hover { animation-play-state: paused; }
+  @media (prefers-reduced-motion: reduce) {
+    .ticker-track { animation: none; }
+  }
+
+  /* The brand wordmark: Unbounded caps at full weight. */
+  .wordmark {
+    font-family: 'Unbounded', 'Arial Black', sans-serif;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: -0.02em;
+    line-height: 0.9;
+  }
+
+  .skeleton {
+    background: var(--c-raised);
+    animation: skeleton-pulse 1.4s ease-in-out infinite;
+  }
+
+  @keyframes skeleton-pulse {
+    0%, 100% { opacity: 1; }
+    50% { opacity: 0.55; }
+  }
+
+  @media (prefers-reduced-motion: reduce) {
+    .skeleton { animation: none; }
   }
 }
 
 @layer components {
-
-  /* ─── Glass Nav / Card ─── */
-  .glass-nav {
-    background: rgba(255, 255, 255, 0.65);
-    backdrop-filter: blur(20px) saturate(160%);
-    -webkit-backdrop-filter: blur(20px) saturate(160%);
-    border: 1px solid rgba(255, 255, 255, 0.5);
-    box-shadow: 0 4px 24px rgba(44, 62, 80, 0.05), inset 0 1px 0 rgba(255, 255, 255, 0.7);
-  }
-
+  /* Surfaces. Names kept from the old theme so every screen moves at once. */
+  /* A scorecard on the desk: paper, a hairline edge, a soft drop. */
+  .panel,
   .glass-card {
-    background: rgba(255, 255, 255, 0.75);
-    backdrop-filter: blur(16px) saturate(180%);
-    -webkit-backdrop-filter: blur(16px) saturate(180%);
-    border-radius: 20px;
-    border: 1px solid rgba(255, 255, 255, 0.6);
-    box-shadow: 0 8px 32px rgba(44, 62, 80, 0.04), inset 0 1px 0 rgba(255, 255, 255, 0.8);
-    transition: transform 0.25s ease, box-shadow 0.25s ease, background 0.25s ease;
-  }
-
-  .glass-card:hover {
-    background: rgba(255, 255, 255, 0.85);
-    box-shadow: 0 14px 44px rgba(44, 62, 80, 0.08), inset 0 1px 0 rgba(255, 255, 255, 0.9);
-    transform: translateY(-3px);
+    border-radius: 18px;
+    background: var(--c-surface);
+    border: 1px solid var(--c-line);
+    box-shadow: 0 1px 0 rgb(255 255 255 / 0.8) inset, 0 18px 40px -28px rgb(28 26 23 / 0.35);
   }
 
   .glass-dialog, .glass-login {
-    background: rgba(255, 255, 255, 0.80);
-    backdrop-filter: blur(24px) saturate(170%);
-    -webkit-backdrop-filter: blur(24px) saturate(170%);
+    background: var(--c-surface);
     border-radius: 20px;
-    border: 1px solid rgba(255, 255, 255, 0.60);
-    box-shadow: 0 16px 48px rgba(44, 62, 80, 0.08), inset 0 1px 0 rgba(255, 255, 255, 0.8);
   }
 
-  /* ─── Glass Input Fields ─── */
-  .glass-input {
-    background: rgba(255, 255, 255, 0.80) !important;
-    border: 1px solid rgba(174, 198, 207, 0.45) !important; /* Pastel Blue border */
-    backdrop-filter: blur(8px);
-    -webkit-backdrop-filter: blur(8px);
-    transition: border-color 0.2s ease, box-shadow 0.2s ease;
+  /* The navigation floats over the page as one rounded bar. */
+  .floating-bar {
+    border-radius: 18px;
+    background: rgb(251 250 246 / 0.82);
+    -webkit-backdrop-filter: blur(14px) saturate(1.2);
+    backdrop-filter: blur(14px) saturate(1.2);
+    border: 1px solid rgb(217 211 199 / 0.8);
+    box-shadow: 0 14px 34px -22px rgb(28 26 23 / 0.45);
   }
 
-  .glass-input:focus {
-    border-color: rgba(174, 198, 207, 0.8) !important;
-    box-shadow: 0 0 0 3px rgba(174, 198, 207, 0.30) !important;
-    outline: none;
+  /* A sticker slapped on the page: the game's voice, used once per screen. */
+  .sticker {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.4em;
+    border-radius: 999px;
+    background: var(--c-tan);
+    color: #fff;
+    font-weight: 600;
+    padding: 0.35em 0.9em;
+    transform: rotate(-4deg);
+    box-shadow: 0 6px 16px -8px rgb(209 52 62 / 0.7);
+    transition: transform 200ms cubic-bezier(0.34, 1.56, 0.64, 1);
+  }
+  .sticker:hover { transform: rotate(2deg) scale(1.06); }
+
+  .glass-nav {
+    background: var(--c-stage);
   }
 
-  /* ─── Gradient Header (card headers) ─── */
   .gradient-header {
-    background: linear-gradient(135deg,
-      rgba(255, 243, 176, 0.9) 0%,    /* Pastel Yellow */
-      rgba(255, 209, 220, 0.9) 50%,   /* Pastel Pink */
-      rgba(174, 198, 207, 0.9) 100%); /* Pastel Blue */
-    border-bottom: 1px solid rgba(255, 255, 255, 0.5);
+    background: var(--c-raised);
   }
 
-  /* ─── Primary Button ─── */
-  .primary-button {
-    /* Rich pastel gradient red/orange */
-    background: linear-gradient(135deg, #FF8A8A 0%, #FFB347 100%);
-    color: white;
-    font-weight: 700;
-    @apply py-2.5 px-6 rounded-2xl transition-all duration-300 shadow-lg hover:shadow-xl hover:-translate-y-0.5 border-0;
-  }
-
-  .primary-button:hover {
-    filter: brightness(1.05);
-  }
-
-  /* ─── Secondary Button ─── */
-  .secondary-button {
-    background: rgba(255, 255, 255, 0.70);
-    backdrop-filter: blur(8px);
-    border: 1px solid rgba(44, 62, 80, 0.15); /* Soft Navy border */
-    color: #2C3E50; /* Navy Blue Text */
-    @apply font-semibold py-2.5 px-6 rounded-2xl transition-all duration-300 shadow-sm hover:bg-white/90;
-  }
-
-  /* ─── Stat Chip ─── */
   .stat-chip {
-    background: rgba(255, 255, 255, 0.80);
-    backdrop-filter: blur(12px);
-    -webkit-backdrop-filter: blur(12px);
-    border: 1px solid rgba(255, 255, 255, 0.5);
-    border-radius: 16px;
+    background: var(--c-surface);
+    border-radius: 12px;
     padding: 0.75rem 1rem;
-    box-shadow: 0 4px 16px rgba(44, 62, 80, 0.05);
-    transition: transform 0.2s ease, box-shadow 0.2s ease;
   }
 
-  .stat-chip:hover {
+  .glass-input {
+    background: rgb(255 255 255 / 0.92) !important;
+    border: 1px solid var(--c-line) !important;
+    color: var(--c-ink);
+    transition: border-color 150ms ease;
+  }
+
+  .glass-input:focus,
+  .glass-input:focus-visible {
+    border-color: var(--c-tan) !important;
+    outline: none;
+    box-shadow: none !important;
+  }
+
+  .primary-button {
+    background: var(--c-tan);
+    color: var(--c-tan-ink);
+    font-weight: 600;
+    border: 0;
+    border-radius: 10px;
+    min-height: 44px;
+    padding: 0.625rem 1.25rem;
+    border-radius: 14px;
+    box-shadow: 0 10px 24px -12px rgb(209 52 62 / 0.7);
+    transition: background-color 150ms ease, transform 220ms cubic-bezier(0.34, 1.56, 0.64, 1), box-shadow 220ms ease;
+  }
+
+  .primary-button:hover:not(:disabled) {
+    background: var(--c-willow);
     transform: translateY(-2px);
-    box-shadow: 0 8px 28px rgba(44, 62, 80, 0.08);
+    box-shadow: 0 16px 28px -12px rgb(209 52 62 / 0.75);
   }
 
-  /* ─── Page Headers ─── */
+  .primary-button:active:not(:disabled) {
+    transform: translateY(0) scale(0.97);
+  }
+
+  .secondary-button {
+    background: var(--c-raised);
+    color: var(--c-ink);
+    font-weight: 600;
+    border-radius: 10px;
+    min-height: 44px;
+    padding: 0.625rem 1.25rem;
+    transition: background-color 150ms ease;
+  }
+
+  .secondary-button:hover:not(:disabled) {
+    background: var(--c-line);
+  }
+
   .page-header {
-    font-family: 'Bricolage Grotesque', sans-serif;
+    font-family: 'Unbounded', 'Rubik', system-ui, sans-serif;
     font-weight: 800;
-    color: #1E293B; /* Navy Blue */
-    letter-spacing: -0.02em;
+    letter-spacing: -0.025em;
+    line-height: 1.1;
+    color: var(--c-ink);
   }
 
   .page-subtitle {
-    color: #475569; /* Slate Blue */
-    font-weight: 500;
+    color: var(--c-soft);
+    font-weight: 400;
   }
 
-  /* ─── Category chips (New Vibrant Categories) ─── */
-  /* Bowler gets Pastel Blue */
-  .cat-bowler     { background: rgba(174, 198, 207, 0.8); color: #1E293B; border: 1px solid rgba(174, 198, 207, 1); }
-  /* Batter gets Pastel Red */
-  .cat-batter     { background: rgba(255, 138, 138, 0.8); color: white; border: 1px solid rgba(255, 138, 138, 1); }
-  /* All-rounder gets Pastel Purple */
-  .cat-allrounder { background: rgba(195, 177, 225, 0.8); color: #1E293B; border: 1px solid rgba(195, 177, 225, 1); }
+  /* Category marks: soft tints, dark ink. */
+  .cat-batter     { background: var(--c-cat-batter);     color: #6b3a12; }
+  .cat-bowler     { background: var(--c-cat-bowler);     color: #7a1f2b; }
+  .cat-allrounder { background: var(--c-cat-allrounder); color: #1f5233; }
 }

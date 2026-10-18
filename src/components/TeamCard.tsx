@@ -10,6 +10,7 @@ import { useToast } from '@/hooks/use-toast';
 import { deleteTeam, updateTeam, modifyPlayerBid } from '@/services/teamService';
 import { supabase } from '@/integrations/supabase/client';
 import { generateAuctionCommentary } from '@/services/aiService';
+import { MEMES_BROKE, MEMES_CONFUSION, MEMES_STRATEGY, MEMES_STEAL, MEMES_OVERPRICED, MEMES_20_CR } from '@/data/memes';
 import {
   AlertDialog,
   AlertDialogAction,
@@ -29,6 +30,27 @@ export type Team = {
   points: number;
   players?: Player[];
 };
+
+const stripGloss = (line: string) => line.replace(/\s*\(.*?\)\s*$/, '');
+
+// Pools per public-view situation; each team gets a stable line via a hash of its id.
+const QUOTES_SPECTATOR = [...MEMES_BROKE, ...MEMES_CONFUSION.slice(0, 5)].map(stripGloss);
+const QUOTES_BANKRUPT = [...MEMES_OVERPRICED].map(stripGloss);
+const QUOTES_MASTERMIND = [...MEMES_STRATEGY, ...MEMES_STEAL].map(stripGloss);
+const QUOTES_AGGRESSIVE = [...MEMES_20_CR].map(stripGloss);
+
+const hashId = (id: string) => {
+  let h = 0;
+  for (let i = 0; i < id.length; i++) h = (h * 31 + id.charCodeAt(i)) | 0;
+  return Math.abs(h);
+};
+
+const TeamQuote = ({ teamId, pool, label }: { teamId: string; pool: string[]; label: string }) => (
+  <div className="rounded-xl bg-raised p-3 text-center">
+    <p className="text-sm italic text-ink">"{pool[hashId(teamId) % pool.length]}"</p>
+    <p className="dot-label text-[11px] text-tan mt-1">{label}</p>
+  </div>
+);
 
 interface TeamCardProps {
   team: Team;
@@ -139,17 +161,17 @@ const TeamCard = ({
       <div className="p-4 gradient-header">
         <div className="flex items-center justify-between">
           <div className="flex items-center gap-2.5 min-w-0">
-            <div className="w-9 h-9 rounded-xl bg-white/40 backdrop-blur-sm flex items-center justify-center flex-shrink-0">
-              <Shield className="h-4.5 w-4.5 text-[#334155]" />
+            <div className="w-9 h-9 rounded-xl bg-raised flex items-center justify-center flex-shrink-0">
+              <Shield className="h-4.5 w-4.5 text-ink" />
             </div>
-            <h3 className="font-display font-bold text-[#1e293b] truncate">{name}</h3>
+            <h3 className="font-display font-bold text-ink truncate">{name}</h3>
           </div>
           
           {isEditable && (
             <div className="flex gap-1 flex-shrink-0">
               <Dialog open={isEditing} onOpenChange={setIsEditing}>
                 <DialogTrigger asChild>
-                  <Button variant="ghost" size="icon" className="h-8 w-8 text-[#334155] hover:bg-white/30 rounded-xl">
+                  <Button variant="ghost" size="icon" className="h-8 w-8 text-ink hover:bg-line rounded-xl">
                     <Pencil className="h-3.5 w-3.5" />
                   </Button>
                 </DialogTrigger>
@@ -159,7 +181,7 @@ const TeamCard = ({
                   </DialogHeader>
                   <div className="space-y-4">
                     <div className="space-y-2">
-                      <Label htmlFor="team-name" className="text-xs font-semibold text-[#334155]">Team Name</Label>
+                      <Label htmlFor="team-name" className="text-xs font-semibold text-ink">Team Name</Label>
                       <Input id="team-name" value={editedName} onChange={(e) => setEditedName(e.target.value)} className="glass-input rounded-xl h-10" />
                     </div>
                     <Button onClick={handleEdit} className="w-full primary-button">Save Changes</Button>
@@ -168,7 +190,7 @@ const TeamCard = ({
               </Dialog>
               <AlertDialog>
                 <AlertDialogTrigger asChild>
-                  <Button variant="ghost" size="icon" className="h-8 w-8 text-[#334155] hover:bg-red-500/10 hover:text-red-500 rounded-xl">
+                  <Button variant="ghost" size="icon" className="h-8 w-8 text-ink hover:bg-red-500/10 hover:text-red-500 rounded-xl">
                     <Trash2 className="h-3.5 w-3.5" />
                   </Button>
                 </AlertDialogTrigger>
@@ -195,54 +217,51 @@ const TeamCard = ({
         {/* Purse Bar */}
         <div>
           <div className="flex justify-between mb-1.5">
-            <span className="text-xs font-medium text-[#475569]">Purse Left</span>
-            <span className="text-xs font-display font-bold text-[#1e293b]">{purse} Cr</span>
+            <span className="text-xs font-medium text-soft">Purse Left</span>
+            <span className="text-xs font-display font-bold text-ink">{purse} Cr</span>
           </div>
-          <div className="h-2 rounded-full bg-white/40 overflow-hidden">
+          <div className="h-2 rounded-full bg-raised overflow-hidden">
             <div 
-              className="h-full rounded-full transition-all duration-500"
-              style={{
-                width: `${pursePercentage}%`,
-                background: 'linear-gradient(90deg, #fdf497, #fbc2eb, #ff8787)'
-              }}
+              className="h-full rounded-full bg-tan transition-[width] duration-500"
+              style={{ width: `${Math.min(100, Math.max(0, pursePercentage))}%` }}
             />
           </div>
         </div>
         
         {/* Stats */}
         <div className="grid grid-cols-2 gap-2">
-          <div className="text-center p-2.5 rounded-xl bg-white/35">
-            <p className="text-[10px] text-[#475569] font-medium">Points</p>
-            <p className="font-display font-bold text-[#1e293b]">{points}</p>
+          <div className="text-center p-2.5 rounded-xl bg-raised">
+            <p className="text-[10px] text-soft font-medium">Points</p>
+            <p className="font-display font-bold text-ink">{points}</p>
           </div>
-          <div className="text-center p-2.5 rounded-xl bg-white/35">
-            <p className="text-[10px] text-[#475569] font-medium">Players</p>
-            <p className="font-display font-bold text-[#1e293b]">{players.length}</p>
+          <div className="text-center p-2.5 rounded-xl bg-raised">
+            <p className="text-[10px] text-soft font-medium">Players</p>
+            <p className="font-display font-bold text-ink">{players.length}</p>
           </div>
         </div>
         
         {/* Player List */}
         {showPlayers && players.length > 0 && (
           <div className="pt-2">
-            <h4 className="font-display font-semibold text-xs flex items-center gap-1.5 mb-2 text-[#334155]">
+            <h4 className="font-display font-semibold text-xs flex items-center gap-1.5 mb-2 text-ink">
               <Users className="h-3.5 w-3.5" />
               Roster
             </h4>
             <div className="space-y-1">
               {players.map((player) => (
-                <div key={player.id} className="py-2 px-3 flex justify-between items-center rounded-xl bg-white/25 hover:bg-white/40 transition-colors">
+                <div key={player.id} className="py-2 px-3 flex justify-between items-center rounded-xl bg-raised hover:bg-line transition-colors">
                   <div className="min-w-0">
-                    <span className="font-medium text-sm text-[#1e293b] truncate block">{player.name}</span>
-                    <span className="text-[10px] text-[#475569]">{player.category}</span>
+                    <span className="font-medium text-sm text-ink truncate block">{player.name}</span>
+                    <span className="text-[10px] text-soft">{player.category}</span>
                   </div>
                   <div className="flex items-center gap-2 flex-shrink-0">
-                    <span className="text-xs font-display font-bold text-[#334155]">{player.bid_price}Cr</span>
+                    <span className="text-xs font-display font-bold text-ink">{player.bid_price}Cr</span>
                     {isEditable && (
                       <AlertDialog>
                         <AlertDialogTrigger asChild>
                           <Button
                             type="button" variant="ghost" size="icon"
-                            className="h-7 w-7 text-red-400 hover:bg-red-50/50 hover:text-red-600 rounded-lg"
+                            className="h-7 w-7 text-leather hover:bg-raised hover:text-ink rounded-lg"
                             title="Release player"
                           >
                             <UserMinus className="h-3.5 w-3.5" />
@@ -270,30 +289,18 @@ const TeamCard = ({
         )}
         
         {isPublicView && (
-          <div className="pt-2 mt-auto">
+          <div className="pt-2 mt-auto space-y-2">
             {players.length === 0 && purse === initialPurse && (
-              <div className="bg-[#f1f5f9]/50 border border-[#cbd5e1]/50 p-2.5 rounded-xl text-center">
-                <p className="text-xs font-semibold italic text-[#475569]">"Nannu involve cheyakandi Rao garu." ☕</p>
-                <p className="text-[9px] uppercase tracking-widest font-bold text-[#64748b] mt-1">Silent Spectator</p>
-              </div>
+              <TeamQuote teamId={team.id} pool={QUOTES_SPECTATOR} label="Silent Spectator" />
             )}
             {purse < 15 && players.length > 0 && (
-              <div className="bg-[#ffedd5]/50 border border-[#fdba74]/50 p-2.5 rounded-xl text-center">
-                <p className="text-xs font-semibold italic text-[#ea580c]">"Anthe ga, anthe ga!" 💸</p>
-                <p className="text-[9px] uppercase tracking-widest font-bold text-[#c2410c] mt-1">Bankrupt Flex</p>
-              </div>
+              <TeamQuote teamId={team.id} pool={QUOTES_BANKRUPT} label="Bankrupt Flex" />
             )}
             {players.length >= 2 && purse >= 25 && (
-              <div className="bg-[#ecfdf5]/50 border border-[#6ee7b7]/50 p-2.5 rounded-xl text-center">
-                <p className="text-xs font-semibold italic text-[#059669]">"Akkada space ledu, nene create cheskunna." 🧠</p>
-                <p className="text-[9px] uppercase tracking-widest font-bold text-[#047857] mt-1">Mastermind Steals</p>
-              </div>
+              <TeamQuote teamId={team.id} pool={QUOTES_MASTERMIND} label="Mastermind Steals" />
             )}
             {players.length > 0 && purse >= 15 && purse < 25 && (
-              <div className="bg-[#eff6ff]/50 border border-[#93c5fd]/50 p-2.5 rounded-xl text-center">
-                <p className="text-xs font-semibold italic text-[#2563eb]">"Debbaki thinking maaripovala." 💥</p>
-                <p className="text-[9px] uppercase tracking-widest font-bold text-[#1d4ed8] mt-1">Aggressive Bidders</p>
-              </div>
+              <TeamQuote teamId={team.id} pool={QUOTES_AGGRESSIVE} label="Aggressive Bidders" />
             )}
           </div>
         )}
