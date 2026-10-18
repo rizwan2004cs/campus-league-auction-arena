@@ -8,10 +8,9 @@ import { RecentlySoldWidget } from '@/components/RecentlySoldWidget';
 import { Player, CategoryMark } from '@/components/PlayerCard';
 import PlayerPhoto from '@/components/PlayerPhoto';
 import { Team } from '@/components/TeamCard';
-import TeamCard from '@/components/TeamCard';
+import SquadBoard from '@/components/SquadBoard';
 import AuctionControls from '@/components/AuctionControls';
 import Telestrator from '@/components/Telestrator';
-import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Button } from '@/components/ui/button';
 import { AnimatePresence } from 'framer-motion';
 import SoldCelebration from '@/components/SoldCelebration';
@@ -296,29 +295,19 @@ const AuctionRoom = () => {
           })}
         </section>
 
-        <section aria-label="Team rosters" className="mt-10">
-          <h3 className="mb-3 text-lg font-semibold text-ink">Rosters</h3>
+        <section aria-label="Squads" className="mt-12">
+          <div className="mb-4 flex flex-wrap items-end justify-between gap-3">
+            <div>
+              <h3 className="font-display text-2xl text-ink">Squads</h3>
+              <p className="mt-1 text-sm text-soft">
+                {playersPerTeam} per category per team. Dashed slots are still open.
+              </p>
+            </div>
+          </div>
           {teams.length === 0 ? (
             <p className="rounded-xl bg-surface p-6 text-soft">No teams yet. Create them on the Teams page.</p>
           ) : (
-            <Tabs defaultValue={teamsByName[0]?.id}>
-              <TabsList className="no-scrollbar mb-4 h-auto w-full justify-start gap-1 overflow-x-auto rounded-xl bg-surface p-1">
-                {teamsByName.map(team => (
-                  <TabsTrigger
-                    key={team.id}
-                    value={team.id}
-                    className="rounded-lg px-3 py-2 text-sm text-soft data-[state=active]:bg-raised data-[state=active]:text-ink"
-                  >
-                    {team.name}
-                  </TabsTrigger>
-                ))}
-              </TabsList>
-              {teamsByName.map(team => (
-                <TabsContent key={team.id} value={team.id} className="mt-0 max-w-xl">
-                  <TeamCard team={team} initialPurse={initialPurse} showPlayers onTeamUpdated={load} />
-                </TabsContent>
-              ))}
-            </Tabs>
+            <SquadBoard teams={teamsByName} playersPerTeam={playersPerTeam} initialPurse={initialPurse} />
           )}
         </section>
       </div>
