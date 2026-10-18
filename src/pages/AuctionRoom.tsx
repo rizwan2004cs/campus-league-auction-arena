@@ -295,12 +295,12 @@ const AuctionRoom = () => {
           })}
         </section>
 
-        <section aria-label="Squads" className="mt-12">
+        <section aria-label="Squads" className="mt-10">
           <div className="mb-4 flex flex-wrap items-end justify-between gap-3">
             <div>
               <h3 className="font-display text-2xl text-ink">Squads</h3>
               <p className="mt-1 text-sm text-soft">
-                {playersPerTeam} per category per team. Dashed slots are still open.
+                Tap a team to see its squad. Dots show filled and open slots per category.
               </p>
             </div>
           </div>
